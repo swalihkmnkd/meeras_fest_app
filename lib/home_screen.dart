@@ -134,7 +134,104 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            SizedBox(height: 24,),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Latest Winners",style: TextStyle(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                SizedBox(
+                  child: Row(
+                    children: [
+                      Text("View All",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
+                      Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
+                    ],
+                  ),
+                )
+              ],
+            ),
+            SizedBox(height: 12,),
+            SizedBox(
+              height: 150,
+
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, index) {
+                return animatedWidget(
+                  from: SlideFrom.right,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+                    child: Container(
+                      width: 240,
+                      height: 140,
+                      margin: EdgeInsets.only(right:10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                        color: Colors.white,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Song",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+                            SizedBox(height: 10,),
+                            Text("Classical Dance",style: TextStyle(fontSize: 10,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                            SizedBox(height: 10,),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
+                                color: Color(0xffF9FAFB),
+                              ),
+                              child:Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                      child: Text("🥇",style: TextStyle(fontSize: 16,),),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text("Alice Johnson",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff6B7280)),),
+                                        Text("Phoenix",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+
+                                      ],
+                                    ),
+
+                                  ],
+                                ),
+                              ) ,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },),
             )
+
           ],
         ),
       ),
