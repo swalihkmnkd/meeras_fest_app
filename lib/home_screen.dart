@@ -1,12 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    List<Color> rankBgColors = [
+      const Color(0xffFEF9C3), // 1
+      const Color(0xffF3F4F6), // 2
+      const Color(0xffFFEDD5), // 3
+      const Color(0xffF8FAFC), // 4
+    ];
 
+    List<Color> rankTextColors = [
+      const Color(0xffA16207),
+      const Color(0xff374151),
+      const Color(0xff9A3412),
+      const Color(0xff64748B),
+    ];
+
+    List<Color> dotColors = [
+      const Color(0xffEF4444),
+      const Color(0xff3B82F6),
+      const Color(0xff22C55E),
+      const Color(0xffA855F7),
+    ];
+
+    List<String> teamNames = [
+      "Phoenix",
+      "Thunderbolts",
+      "Spartans",
+      "Titans",
+    ];
+
+    List<String> points = [
+      "350",
+      "450",
+      "390",
+      "310",
+    ];
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -19,7 +53,7 @@ class HomeScreen extends StatelessWidget {
 
                 children: [
                   SizedBox(height: 50,),
-                  Text("🎨 🎭 🎪 🎵",style:  TextStyle(
+                  Text("🎨 🎭 🎪 🎵",style:  GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),),
@@ -36,9 +70,9 @@ class HomeScreen extends StatelessWidget {
                         end: Alignment.centerRight,
                       ).createShader(bounds);
                     },
-                    child: const Text(
+                    child: Text(
                       "MEERAS FEST 2K27",
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 23,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -48,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                   Text(
                     textAlign: TextAlign.center,
                     "Meerasul Ambiya Heigher secondary Madrassa\noravampuram",
-                    style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold,color: Color(0xff6B7280)),
+                    style: GoogleFonts.inter(fontSize: 18,fontWeight: FontWeight.bold,color: Color(0xff6B7280)),
                   ),
                 ],
                           ),
@@ -85,7 +119,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
                             Text("Result",
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: Color(0xff1F2937),
                               fontWeight: FontWeight.w400,
                               fontSize: 15,
@@ -123,7 +157,7 @@ class HomeScreen extends StatelessWidget {
                             child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
                           ),
                           Text("Result",
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: Color(0xff1F2937),
                               fontWeight: FontWeight.w400,
                               fontSize: 15,
@@ -139,11 +173,11 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Latest Winners",style: TextStyle(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                Text("Latest Winners",style: GoogleFonts.inter(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
                 SizedBox(
                   child: Row(
                     children: [
-                      Text("View All",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
+                      Text("View All",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
                       Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
                     ],
                   ),
@@ -183,9 +217,9 @@ class HomeScreen extends StatelessWidget {
 
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Song",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+                            Text("Song",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
                             SizedBox(height: 10,),
-                            Text("Classical Dance",style: TextStyle(fontSize: 10,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                            Text("Classical Dance",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
                             SizedBox(height: 10,),
                             Container(
                               decoration: BoxDecoration(
@@ -207,14 +241,14 @@ class HomeScreen extends StatelessWidget {
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                      child: Text("🥇",style: TextStyle(fontSize: 16,),),
+                                      child: Text("🥇",style: GoogleFonts.inter(fontSize: 16,),),
                                     ),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text("Alice Johnson",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff6B7280)),),
-                                        Text("Phoenix",style: TextStyle(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+                                        Text("Alice Johnson",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff6B7280)),),
+                                        Text("Phoenix",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
 
                                       ],
                                     ),
@@ -230,7 +264,135 @@ class HomeScreen extends StatelessWidget {
                   ),
                 );
               },),
-            )
+            ),
+            animatedWidget(
+              from: SlideFrom.bottom,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+                child: Container(
+                  margin: EdgeInsets.only(right:10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                    color: Colors.white,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: SvgPicture.asset(
+                                "assets/icons/resultIcon.svg",
+                                height: 15,width: 15,
+                                colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                              ),
+                            ),
+                            Text("Overall Standings",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff1F2937)),),
+                          ],
+                        ),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount:4,
+                          separatorBuilder: (context, index) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                                color: Colors.white,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Row(
+                                  children: [
+
+                                    /// NUMBER
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: rankBgColors[index],
+                                      child: Text(
+                                        "${index + 1}",
+                                        style:  GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: rankTextColors[index],
+                                        ),
+                                      ),
+                                    ),
+
+                                     Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 9),
+                                      child: CircleAvatar(
+                                        radius: 3,
+                                        backgroundColor: dotColors[index],
+                                      ),
+                                    ),
+
+                                    /// NAME
+                                     Expanded(
+                                      child: Text(
+                                        teamNames[index],
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xff1F2937),
+                                        ),
+                                      ),
+                                    ),
+
+                                    /// POINTS
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Text(
+                                        points[index],
+                                        style:
+                                        GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xff667EEA),
+                                        ),
+                                      ),
+                                    ),
+
+                                     Text(
+                                      "Pts",
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xff9CA3AF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           ],
         ),
