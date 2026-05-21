@@ -46,7 +46,8 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Column(
           children: [
-            animatedWidget(
+            FadeSlideAnimation(
+              order: 1,
               from: SlideFrom.top,
               child: Center(
                 child: Column(
@@ -81,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   Text(
                     textAlign: TextAlign.center,
-                    "Meerasul Ambiya Heigher secondary Madrassa\noravampuram",
+                    "Meerasul Ambiya Higher secondary Madrassa\n0ravampuram",
                     style: GoogleFonts.inter(fontSize: 18,fontWeight: FontWeight.bold,color: Color(0xff6B7280)),
                   ),
                 ],
@@ -91,7 +92,8 @@ class HomeScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                    child:  animatedWidget(
+                    child:  FadeSlideAnimation(
+                      order: 2,
                       from: SlideFrom.bottom,
                       child:Container(
                         height: 90,
@@ -100,7 +102,7 @@ class HomeScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
+                              color: Colors.black.withValues(alpha: 0.12),
                               blurRadius: 10,
                               spreadRadius: 2,
                               offset: Offset(0, 4),
@@ -132,7 +134,8 @@ class HomeScreen extends StatelessWidget {
 
                 SizedBox(width: 10,),
                 Expanded(
-                  child: animatedWidget(
+                  child: FadeSlideAnimation(
+                    order: 3,
                     from: SlideFrom.bottom,
                     child:Container(
                       height: 90,
@@ -141,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
+                            color: Colors.black.withValues(alpha: 0.12),
                             blurRadius: 10,
                             spreadRadius: 2,
                             offset: Offset(0, 4),
@@ -185,15 +188,16 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             SizedBox(height: 12,),
-            SizedBox(
-              height: 150,
+            FadeSlideAnimation(
+              order: 3,
+              from: SlideFrom.right,
+              child: SizedBox(
+                height: 150,
 
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, index) {
-                return animatedWidget(
-                  from: SlideFrom.right,
-                  child: Padding(
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                  return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
                     child: Container(
                       width: 240,
@@ -203,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             blurRadius: 8,
                             spreadRadius: 1,
                             offset: Offset(0, 3),
@@ -226,7 +230,7 @@ class HomeScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
+                                    color: Colors.grey.withValues(alpha: 0.2),
                                     blurRadius: 8,
                                     spreadRadius: 1,
                                     offset: Offset(0, 3),
@@ -261,11 +265,12 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-                );
-              },),
+                  );
+                },),
+              ),
             ),
-            animatedWidget(
+            FadeSlideAnimation(
+              order: 4,
               from: SlideFrom.bottom,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
@@ -275,7 +280,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         blurRadius: 8,
                         spreadRadius: 1,
                         offset: Offset(0, 3),
@@ -402,43 +407,77 @@ class HomeScreen extends StatelessWidget {
 }
 enum SlideFrom { top, bottom, left, right }
 
+class FadeSlideAnimation extends StatefulWidget {
+  final Widget child;
+  final SlideFrom from;
+  final int delayMs;
+  final int durationMs;
+  final double distance;
+  final int order;
 
-Widget animatedWidget({
-  required Widget child,
-  SlideFrom from = SlideFrom.top,
-  double distance = 100, // how far it moves
-  int durationMs = 600,
-}) {
-  Offset beginOffset;
+  const FadeSlideAnimation({
+    super.key,
+    required this.child,
+    this.from = SlideFrom.bottom,
+    this.delayMs = 300,
+    this.durationMs = 300,
+    this.distance = 0.2,
+    this.order=1,
+  });
 
-  switch (from) {
-    case SlideFrom.top:
-      beginOffset = const Offset(0, -1);
-      break;
-    case SlideFrom.bottom:
-      beginOffset = const Offset(0, 1);
-      break;
-    case SlideFrom.left:
-      beginOffset = const Offset(-1, 0);
-      break;
-    case SlideFrom.right:
-      beginOffset = const Offset(1, 0);
-      break;
+  @override
+  State<FadeSlideAnimation> createState() =>
+      _FadeSlideAnimationState();
+}
+
+class _FadeSlideAnimationState
+    extends State<FadeSlideAnimation> {
+  bool animate = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.delayed(
+      Duration(milliseconds: widget.delayMs*widget.order),
+          () {
+        if (mounted) {
+          setState(() {
+            animate = true;
+          });
+        }
+      },
+    );
   }
 
-  return TweenAnimationBuilder<Offset>(
-    duration: Duration(milliseconds: durationMs),
-    tween: Tween(begin: beginOffset, end: const Offset(0, 0)),
-    curve: Curves.easeOut,
-    builder: (context, value, child) {
-      return Transform.translate(
-        offset: Offset(
-          value.dx * distance,
-          value.dy * distance,
-        ),
-        child: child,
-      );
-    },
-    child: child,
-  );
+  Offset getOffset() {
+    switch (widget.from) {
+      case SlideFrom.top:
+        return Offset(0, -widget.distance);
+
+      case SlideFrom.bottom:
+        return Offset(0, widget.distance);
+
+      case SlideFrom.left:
+        return Offset(-widget.distance, 0);
+
+      case SlideFrom.right:
+        return Offset(widget.distance, 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: animate ? 1 : 0,
+      duration: Duration(milliseconds: widget.durationMs),
+      curve: Curves.easeOut,
+      child: AnimatedSlide(
+        offset: animate ? Offset.zero : getOffset(),
+        duration: Duration(milliseconds: widget.durationMs),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
 }
