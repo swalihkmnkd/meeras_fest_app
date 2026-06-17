@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meeras_fest_app/home_provider.dart';
+import 'package:meeras_fest_app/resultProvider.dart';
 import 'package:provider/provider.dart';
 
 import 'bottom_bar.dart';
@@ -9,6 +10,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => ResultProvider()),
         // Add more providers here
       ],
       child: const MyApp(),
