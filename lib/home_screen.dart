@@ -155,11 +155,11 @@ class HomeScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircleAvatar(
-                            backgroundColor: Color(0xffFFEDD5),
+                            backgroundColor: Color(0xffF3E8FF),
                             radius: 18,
                             child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
                           ),
-                          Text("Result",
+                          Text("Logout",
                             style: GoogleFonts.inter(
                               color: Color(0xff1F2937),
                               fontWeight: FontWeight.w400,
