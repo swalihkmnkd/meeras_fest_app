@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meeras_fest_app/home_provider.dart';
 import 'package:meeras_fest_app/profileProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -177,30 +178,37 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // 🔥 Sign In Button
-                Container(
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xffFF6B6B)],
-                    ),
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    onPressed: () {},
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("Sign In",style: TextStyle(color: Colors.white),),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward,color: Colors.white,),
-                      ],
-                    ),
-                  ),
+                Consumer2<ProfileProvider,HomeProvider>(
+                  builder: (context,profPro,homePro,child) {
+                    return Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF667EEA), Color(0xffFF6B6B)],
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                        ),
+                        onPressed: () {
+                          profPro.changeLoginRole(profPro.selectedRole);
+                          homePro.changeBottomIndex(0);
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Sign In",style: TextStyle(color: Colors.white),),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward,color: Colors.white,),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                 ),
 
                 const SizedBox(height: 12),

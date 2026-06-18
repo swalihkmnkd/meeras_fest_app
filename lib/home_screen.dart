@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:meeras_fest_app/home_provider.dart';
+import 'package:meeras_fest_app/profileProvider.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -95,39 +98,48 @@ class HomeScreen extends StatelessWidget {
                     child:  FadeSlideAnimation(
                       order: 2,
                       from: SlideFrom.bottom,
-                      child:Container(
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Color(0xffFFEDD5),
-                              radius: 18,
-                              child: SvgPicture.asset(
-                                "assets/icons/resultIcon.svg",
-                                colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                      child:Consumer<HomeProvider>(
+                        builder: (context,homePro,child) {
+                          return InkWell(
+                            onTap: (){
+                              homePro.changeBottomIndex(1);
+                            },
+                            child: Container(
+                              height: 90,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.12),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: Color(0xffFFEDD5),
+                                    radius: 18,
+                                    child: SvgPicture.asset(
+                                      "assets/icons/resultIcon.svg",
+                                      colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                                    ),
+                                  ),
+                                  Text("Result",
+                                  style: GoogleFonts.inter(
+                                    color: Color(0xff1F2937),
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 15,
+                                  ),)
+                                ],
                               ),
                             ),
-                            Text("Result",
-                            style: GoogleFonts.inter(
-                              color: Color(0xff1F2937),
-                              fontWeight: FontWeight.w400,
-                              fontSize: 15,
-                            ),)
-                          ],
-                        ),
+                          );
+                        }
                       ),
                     ),
                   ),
@@ -137,36 +149,45 @@ class HomeScreen extends StatelessWidget {
                   child: FadeSlideAnimation(
                     order: 3,
                     from: SlideFrom.bottom,
-                    child:Container(
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                            offset: Offset(0, 4),
+                    child:Consumer<ProfileProvider>(
+                      builder: (context,profilePro,child) {
+                        return InkWell(
+                          onTap: (){
+                            profilePro.changeLoginRole("Gust");
+                          },
+                          child: Container(
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Color(0xffF3E8FF),
+                                  radius: 18,
+                                  child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
+                                ),
+                                Text("Logout",
+                                  style: GoogleFonts.inter(
+                                    color: Color(0xff1F2937),
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 15,
+                                  ),)
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Color(0xffF3E8FF),
-                            radius: 18,
-                            child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
-                          ),
-                          Text("Logout",
-                            style: GoogleFonts.inter(
-                              color: Color(0xff1F2937),
-                              fontWeight: FontWeight.w400,
-                              fontSize: 15,
-                            ),)
-                        ],
-                      ),
+                        );
+                      }
                     ),
                   ),
                 ),
@@ -177,13 +198,22 @@ class HomeScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Latest Winners",style: GoogleFonts.inter(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
-                SizedBox(
-                  child: Row(
-                    children: [
-                      Text("View All",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
-                      Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
-                    ],
-                  ),
+                Consumer<HomeProvider>(
+                  builder: (context,homePro,child) {
+                    return InkWell(
+                      onTap: (){
+                        homePro.changeBottomIndex(1);
+                      },
+                      child: SizedBox(
+                        child: Row(
+                          children: [
+                            Text("View All",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
+                            Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
+                          ],
+                        ),
+                      ),
+                    );
+                  }
                 )
               ],
             ),

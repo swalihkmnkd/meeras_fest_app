@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:meeras_fest_app/adminScreen.dart';
 import 'package:meeras_fest_app/home_provider.dart';
 import 'package:meeras_fest_app/home_screen.dart';
+import 'package:meeras_fest_app/profileProvider.dart';
 import 'package:meeras_fest_app/profile_screen.dart';
 import 'package:meeras_fest_app/result_screen.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +16,8 @@ class BottomBar extends StatelessWidget {
     var mainPages=[
       HomeScreen(),
       ResultScreen(),
-      ProfileScreen()
+      ProfileScreen(),
+      AdminScreen(),
     ];
 
     return Scaffold(
@@ -36,25 +39,36 @@ class BottomBar extends StatelessWidget {
             topRight: Radius.circular(18),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            bottomItem(
-              icon: "assets/icons/homeIcon.svg",
-              name: "Home",
-              index: 0,
-            ),
-            bottomItem(
-              icon: "assets/icons/resultIcon.svg",
-              name: "Results",
-              index: 1,
-            ),
-            bottomItem(
-              icon: "assets/icons/profileIcon.svg",
-              name: "Profile",
-              index: 2,
-            ),
-          ],
+        child: Consumer<ProfileProvider>(
+          builder: (context,profPro,child) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                bottomItem(
+                  icon: "assets/icons/homeIcon.svg",
+                  name: "Home",
+                  index: 0,
+                ),
+                bottomItem(
+                  icon: "assets/icons/resultIcon.svg",
+                  name: "Results",
+                  index: 1,
+                ),
+                if(profPro.loggedRole!='Admin')
+                bottomItem(
+                  icon: "assets/icons/profileIcon.svg",
+                  name: "Profile",
+                  index: 2,
+                ),
+                if(profPro.loggedRole=='Admin')
+                bottomItem(
+                  icon: "assets/icons/adminDashIcon.svg",
+                  name: "Admin",
+                  index: 3,
+                ),
+              ],
+            );
+          }
         ),
       ),
       body: Consumer<HomeProvider>(
