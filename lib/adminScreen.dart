@@ -7,6 +7,28 @@ class AdminScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String,dynamic>>status=[
+      {"title":'Approved',
+        'name':"John Doe",
+        "program":"Water Color",
+        'textColor':Color(0xff22C55E),
+        'backColor':Color(0xffDCFCE7)},
+      {"title":'Pending',
+        'name':"John Doe",
+        "program":"Water Color",
+        'textColor':Color(0xffF97316),
+        'backColor':Color(0xffFFEDD5)},
+      {"title":'Approved',
+        'name':"John Doe",
+        "program":"Water Color",
+        'textColor':Color(0xff22C55E),
+        'backColor':Color(0xffDCFCE7)},
+      {"title":'Approved',
+        'name':"John Doe",
+        "program":"Water Color",
+        'textColor':Color(0xff22C55E),
+        'backColor':Color(0xffDCFCE7)},
+    ];
     List<Map<String,dynamic>>tile=[
       {"title":'5',
       'subTitle':"Total Programs",
@@ -30,94 +52,145 @@ class AdminScreen extends StatelessWidget {
       'backColor':Color(0xffF3E8FF)},
     ];
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 30,),
-            Text("Admin Panel",style: TextStyle(color: Color(0xff1F2937),fontSize: 18,fontWeight: FontWeight.bold),),
-            Text("Manage festival operations",style: TextStyle(color: Color(0xff6B7280),fontSize: 12),),
-            Container(height: 33,
-            decoration: BoxDecoration(
-              color: Color(0xAAE5E7EB),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Consumer<AdminProvider>(
-                builder: (context,adminPro,child) {
-                  return Row(
-                    children: [
-
-                      Expanded(
-                          child: GestureDetector(
-                            onTap: (){
-                              adminPro.changeAnalyticTab(false);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(9),
-                                color: !adminPro.isAnalyticTab?Colors.white:null,
-                              ),
-                              child:  Center(child: Text("Overview",style: TextStyle(color:!adminPro.isAnalyticTab?Colors.black: Color(0xff6B7280),fontSize: 15),)),
-                            ),
-                          ),
-                        ),
-                    Expanded(
-                          child: GestureDetector(
-                            onTap: (){
-                              adminPro.changeAnalyticTab(true);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(9),
-                                color: adminPro.isAnalyticTab?Colors.white:null,
-                              ),
-                              child:  Center(child: Text("Analytics",style: TextStyle(color: adminPro.isAnalyticTab?Colors.black: Color(0xff6B7280),fontSize: 15),)),
-                            ),
-                          ),
-                        ),
-                    ],
-                  );
-                }
-              ),
-            ),),
-          GridView.builder(
-            shrinkWrap: true,
-            itemCount: tile.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-              childAspectRatio: 2,
-            ), itemBuilder: (context, index) {
-            return   Container(
-              padding: EdgeInsets.all(10),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 30,),
+              Text("Admin Panel",style: TextStyle(color: Color(0xff1F2937),fontSize: 18,fontWeight: FontWeight.bold),),
+              Text("Manage festival operations",style: TextStyle(color: Color(0xff6B7280),fontSize: 12),),
+              SizedBox(height: 15,),
+              Container(height: 33,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: Color(0xAAE5E7EB),
+                borderRadius: BorderRadius.circular(9),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color:tile[index]['backColor'],
-                      borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Consumer<AdminProvider>(
+                  builder: (context,adminPro,child) {
+                    return Row(
+                      children: [
+        
+                        Expanded(
+                            child: GestureDetector(
+                              onTap: (){
+                                adminPro.changeAnalyticTab(false);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(9),
+                                  color: !adminPro.isAnalyticTab?Colors.white:null,
+                                ),
+                                child:  Center(child: Text("Overview",style: TextStyle(color:!adminPro.isAnalyticTab?Colors.black: Color(0xff6B7280),fontSize: 15),)),
+                              ),
+                            ),
+                          ),
+                      Expanded(
+                            child: GestureDetector(
+                              onTap: (){
+                                adminPro.changeAnalyticTab(true);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(9),
+                                  color: adminPro.isAnalyticTab?Colors.white:null,
+                                ),
+                                child:  Center(child: Text("Analytics",style: TextStyle(color: adminPro.isAnalyticTab?Colors.black: Color(0xff6B7280),fontSize: 15),)),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }
+                ),
+              ),),
+            SizedBox(height: 15,),
+            GridView.builder(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: tile.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 20,
+                mainAxisSpacing: 20,
+                childAspectRatio: 1.5,
+              ), itemBuilder: (context, index) {
+              return   Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color:tile[index]['backColor'],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: SvgPicture.asset(tile[index]['icon'],height: 15,width: 15,colorFilter: ColorFilter.mode(tile[index]['iconColor'], BlendMode.srcIn),),
                     ),
-                    child: SvgPicture.asset(tile[index]['icon'],height: 15,width: 15,colorFilter: ColorFilter.mode(tile[index]['iconColor'], BlendMode.srcIn),),
-                  ),
-                  Text(tile[index]['title'],style: TextStyle(color: Colors.black,fontSize: 12,fontWeight: FontWeight.bold),),
-                  Text(tile[index]['subTitle'],style: TextStyle(color: Color(0xff6B7280),fontSize: 12),),
-
-                ],
-              ),
-            );
-          },)
-          ],
+                    Text(tile[index]['title'],style: TextStyle(color: Colors.black,fontSize: 12,fontWeight: FontWeight.bold),),
+                    Text(tile[index]['subTitle'],style: TextStyle(color: Color(0xff6B7280),fontSize: 12),),
+        
+                  ],
+                ),
+              );
+            },),
+              SizedBox(height: 15,),
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Recent Registrations",style: TextStyle(color: Color(0xff1F2937),fontWeight: FontWeight.bold,fontSize: 12),),
+                SizedBox(height: 15,),
+                ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount:status.length,
+                  shrinkWrap: true,
+                  itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(status[index]['name'],style: TextStyle(color: Color(0xff1F2937),fontWeight: FontWeight.w400,fontSize: 12),),
+                            Text(status[index]['program'],style: TextStyle(color: Color(0xff6B7280),fontSize: 12),),
+                          ],
+                        ),
+                        Container(
+                          padding: EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: status[index]['backColor'],
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                          child:Text(status[index]['title'],style: TextStyle(color:status[index]['textColor'],fontWeight: FontWeight.w400,fontSize: 12),),
+                        )
+                      ],
+                    ),
+                  );
+                },)
+        
+              ],
+            ),
+          ),
+        
+            ],
+          ),
         ),
       ),
     );

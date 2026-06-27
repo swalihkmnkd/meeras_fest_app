@@ -45,64 +45,116 @@ class HomeScreen extends StatelessWidget {
       "310",
     ];
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        child: Column(
-          children: [
-            FadeSlideAnimation(
-              order: 1,
-              from: SlideFrom.top,
-              child: Center(
-                child: Column(
-
-                children: [
-                  SizedBox(height: 50,),
-                  Text("🎨 🎭 🎪 🎵",style:  GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),),
-                  ShaderMask(
-                    shaderCallback: (bounds) {
-                      return const LinearGradient(
-                        colors: [
-                          Color(0xFFFF6B6B), // stop 0%
-                          Color(0xFFFF8E53), // stop 50%
-                          Color(0xFF667EEA), // stop 100%
-                        ],
-                        stops: [0.0, 0.5, 1.0],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ).createShader(bounds);
-                    },
-                    child: Text(
-                      "MEERAS FEST 2K27",
-                      style: GoogleFonts.inter(
-                        fontSize: 23,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Column(
+            children: [
+              FadeSlideAnimation(
+                order: 1,
+                from: SlideFrom.top,
+                child: Center(
+                  child: Column(
+        
+                  children: [
+                    SizedBox(height: 50,),
+                    Text("🎨 🎭 🎪 🎵",style:  GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),),
+                    ShaderMask(
+                      shaderCallback: (bounds) {
+                        return const LinearGradient(
+                          colors: [
+                            Color(0xFFFF6B6B), // stop 0%
+                            Color(0xFFFF8E53), // stop 50%
+                            Color(0xFF667EEA), // stop 100%
+                          ],
+                          stops: [0.0, 0.5, 1.0],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ).createShader(bounds);
+                      },
+                      child: Text(
+                        "MEERAS FEST 2K27",
+                        style: GoogleFonts.inter(
+                          fontSize: 23,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    textAlign: TextAlign.center,
-                    "Meerasul Ambiya Higher secondary Madrassa\n0ravampuram",
-                    style: GoogleFonts.inter(fontSize: 18,fontWeight: FontWeight.bold,color: Color(0xff6B7280)),
-                  ),
-                ],
-                          ),
-              ),),
-            SizedBox(height: 15,),
-            Row(
-              children: [
-                Expanded(
-                    child:  FadeSlideAnimation(
-                      order: 2,
+                    Text(
+                      textAlign: TextAlign.center,
+                      "Meerasul Ambiya Higher secondary Madrassa\n0ravampuram",
+                      style: GoogleFonts.inter(fontSize: 18,fontWeight: FontWeight.bold,color: Color(0xff6B7280)),
+                    ),
+                  ],
+                            ),
+                ),),
+              SizedBox(height: 15,),
+              Row(
+                children: [
+                  Expanded(
+                      child:  FadeSlideAnimation(
+                        order: 2,
+                        from: SlideFrom.bottom,
+                        child:Consumer<HomeProvider>(
+                          builder: (context,homePro,child) {
+                            return InkWell(
+                              onTap: (){
+                                homePro.changeBottomIndex(1);
+                              },
+                              child: Container(
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.12),
+                                      blurRadius: 10,
+                                      spreadRadius: 2,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Color(0xffFFEDD5),
+                                      radius: 18,
+                                      child: SvgPicture.asset(
+                                        "assets/icons/resultIcon.svg",
+                                        colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                                      ),
+                                    ),
+                                    Text("Result",
+                                    style: GoogleFonts.inter(
+                                      color: Color(0xff1F2937),
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 15,
+                                    ),)
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                        ),
+                      ),
+                    ),
+        
+                  SizedBox(width: 10,),
+                  Expanded(
+                    child: FadeSlideAnimation(
+                      order: 3,
                       from: SlideFrom.bottom,
-                      child:Consumer<HomeProvider>(
-                        builder: (context,homePro,child) {
+                      child:Consumer<ProfileProvider>(
+                        builder: (context,profilePro,child) {
                           return InkWell(
                             onTap: (){
-                              homePro.changeBottomIndex(1);
+                              profilePro.changeLoginRole("Gust");
                             },
                             child: Container(
                               height: 90,
@@ -122,19 +174,16 @@ class HomeScreen extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: Color(0xffFFEDD5),
+                                    backgroundColor: Color(0xffF3E8FF),
                                     radius: 18,
-                                    child: SvgPicture.asset(
-                                      "assets/icons/resultIcon.svg",
-                                      colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
-                                    ),
+                                    child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
                                   ),
-                                  Text("Result",
-                                  style: GoogleFonts.inter(
-                                    color: Color(0xff1F2937),
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 15,
-                                  ),)
+                                  Text("Logout",
+                                    style: GoogleFonts.inter(
+                                      color: Color(0xff1F2937),
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 15,
+                                    ),)
                                 ],
                               ),
                             ),
@@ -143,293 +192,246 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                SizedBox(width: 10,),
-                Expanded(
-                  child: FadeSlideAnimation(
-                    order: 3,
-                    from: SlideFrom.bottom,
-                    child:Consumer<ProfileProvider>(
-                      builder: (context,profilePro,child) {
-                        return InkWell(
-                          onTap: (){
-                            profilePro.changeLoginRole("Gust");
-                          },
-                          child: Container(
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.12),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Color(0xffF3E8FF),
-                                  radius: 18,
-                                  child: Icon(Icons.login_rounded,size: 18,color: Color(0xff667EEA),),
-                                ),
-                                Text("Logout",
-                                  style: GoogleFonts.inter(
-                                    color: Color(0xff1F2937),
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 15,
-                                  ),)
-                              ],
-                            ),
+                ],
+              ),
+              SizedBox(height: 24,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Latest Winners",style: GoogleFonts.inter(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                  Consumer<HomeProvider>(
+                    builder: (context,homePro,child) {
+                      return InkWell(
+                        onTap: (){
+                          homePro.changeBottomIndex(1);
+                        },
+                        child: SizedBox(
+                          child: Row(
+                            children: [
+                              Text("View All",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
+                              Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
+                            ],
                           ),
-                        );
-                      }
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 24,),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Latest Winners",style: GoogleFonts.inter(fontSize: 13,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
-                Consumer<HomeProvider>(
-                  builder: (context,homePro,child) {
-                    return InkWell(
-                      onTap: (){
-                        homePro.changeBottomIndex(1);
-                      },
-                      child: SizedBox(
-                        child: Row(
-                          children: [
-                            Text("View All",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff667EEA)),),
-                            Icon(Icons.arrow_forward_outlined,color: Color(0xff667EEA),size: 12,)
+                        ),
+                      );
+                    }
+                  )
+                ],
+              ),
+              SizedBox(height: 12,),
+              FadeSlideAnimation(
+                order: 3,
+                from: SlideFrom.right,
+                child: SizedBox(
+                  height: 150,
+        
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+                      child: Container(
+                        width: 240,
+                        height: 140,
+                        margin: EdgeInsets.only(right:10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                              offset: Offset(0, 3),
+                            ),
                           ],
+                          color: Colors.white,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+        
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Song",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+                              SizedBox(height: 10,),
+                              Text("Classical Dance",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
+                              SizedBox(height: 10,),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withValues(alpha: 0.2),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                      offset: Offset(0, 3),
+                                    ),
+                                  ],
+                                  color: Color(0xffF9FAFB),
+                                ),
+                                child:Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                        child: Text("🥇",style: GoogleFonts.inter(fontSize: 16,),),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text("Alice Johnson",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff6B7280)),),
+                                          Text("Phoenix",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
+        
+                                        ],
+                                      ),
+        
+                                    ],
+                                  ),
+                                ) ,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
-                  }
-                )
-              ],
-            ),
-            SizedBox(height: 12,),
-            FadeSlideAnimation(
-              order: 3,
-              from: SlideFrom.right,
-              child: SizedBox(
-                height: 150,
-
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
-                    child: Container(
-                      width: 240,
-                      height: 140,
-                      margin: EdgeInsets.only(right:10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                        color: Colors.white,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Song",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
-                            SizedBox(height: 10,),
-                            Text("Classical Dance",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.bold,color: Color(0xff1F2937)),),
-                            SizedBox(height: 10,),
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                    offset: Offset(0, 3),
-                                  ),
-                                ],
-                                color: Color(0xffF9FAFB),
-                              ),
-                              child:Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                      child: Text("🥇",style: GoogleFonts.inter(fontSize: 16,),),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text("Alice Johnson",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff6B7280)),),
-                                        Text("Phoenix",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w400,color: Color(0xff6B7280)),),
-
-                                      ],
-                                    ),
-
-                                  ],
-                                ),
-                              ) ,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },),
+                  },),
+                ),
               ),
-            ),
-            FadeSlideAnimation(
-              order: 4,
-              from: SlideFrom.bottom,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
-                child: Container(
-                  margin: EdgeInsets.only(right:10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                    color: Colors.white,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: SvgPicture.asset(
-                                "assets/icons/resultIcon.svg",
-                                height: 15,width: 15,
-                                colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
-                              ),
-                            ),
-                            Text("Overall Standings",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff1F2937)),),
-                          ],
-                        ),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount:4,
-                          separatorBuilder: (context, index) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withValues(alpha: 0.2),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                                color: Colors.white,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Row(
-                                  children: [
-
-                                    /// NUMBER
-                                    CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: rankBgColors[index],
-                                      child: Text(
-                                        "${index + 1}",
-                                        style:  GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: rankTextColors[index],
-                                        ),
-                                      ),
-                                    ),
-
-                                     Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 9),
-                                      child: CircleAvatar(
-                                        radius: 3,
-                                        backgroundColor: dotColors[index],
-                                      ),
-                                    ),
-
-                                    /// NAME
-                                     Expanded(
-                                      child: Text(
-                                        teamNames[index],
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xff1F2937),
-                                        ),
-                                      ),
-                                    ),
-
-                                    /// POINTS
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: Text(
-                                        points[index],
-                                        style:
-                                        GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xff667EEA),
-                                        ),
-                                      ),
-                                    ),
-
-                                     Text(
-                                      "Pts",
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w400,
-                                        color: Color(0xff9CA3AF),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+              FadeSlideAnimation(
+                order: 4,
+                from: SlideFrom.bottom,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+                  child: Container(
+                    margin: EdgeInsets.only(right:10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                          offset: Offset(0, 3),
                         ),
                       ],
+                      color: Colors.white,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SvgPicture.asset(
+                                  "assets/icons/resultIcon.svg",
+                                  height: 15,width: 15,
+                                  colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                                ),
+                              ),
+                              Text("Overall Standings",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff1F2937)),),
+                            ],
+                          ),
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount:4,
+                            separatorBuilder: (context, index) => const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withValues(alpha: 0.2),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                  color: Colors.white,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Row(
+                                    children: [
+        
+                                      /// NUMBER
+                                      CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor: rankBgColors[index],
+                                        child: Text(
+                                          "${index + 1}",
+                                          style:  GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: rankTextColors[index],
+                                          ),
+                                        ),
+                                      ),
+        
+                                       Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 9),
+                                        child: CircleAvatar(
+                                          radius: 3,
+                                          backgroundColor: dotColors[index],
+                                        ),
+                                      ),
+        
+                                      /// NAME
+                                       Expanded(
+                                        child: Text(
+                                          teamNames[index],
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xff1F2937),
+                                          ),
+                                        ),
+                                      ),
+        
+                                      /// POINTS
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 8),
+                                        child: Text(
+                                          points[index],
+                                          style:
+                                          GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xff667EEA),
+                                          ),
+                                        ),
+                                      ),
+        
+                                       Text(
+                                        "Pts",
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xff9CA3AF),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-
-          ],
+        
+            ],
+          ),
         ),
       ),
     );
