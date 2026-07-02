@@ -3,8 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:meeras_fest_app/adminScreen.dart';
 import 'package:meeras_fest_app/home_provider.dart';
 import 'package:meeras_fest_app/home_screen.dart';
+import 'package:meeras_fest_app/judgement_screen.dart';
+import 'package:meeras_fest_app/list_registration_screen.dart';
 import 'package:meeras_fest_app/profileProvider.dart';
 import 'package:meeras_fest_app/profile_screen.dart';
+import 'package:meeras_fest_app/register_screen.dart';
 import 'package:meeras_fest_app/result_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +21,9 @@ class BottomBar extends StatelessWidget {
       ResultScreen(),
       ProfileScreen(),
       AdminScreen(),
+      RegisterScreen(),
+      ListRegistrationScreen(),
+      JudgementScreen()
     ];
 
     return Scaffold(
@@ -54,7 +60,7 @@ class BottomBar extends StatelessWidget {
                   name: "Results",
                   index: 1,
                 ),
-                if(profPro.loggedRole!='Admin')
+                if(profPro.loggedRole=='User'||profPro.loggedRole=='Gust')
                 bottomItem(
                   icon: "assets/icons/profileIcon.svg",
                   name: "Profile",
@@ -65,6 +71,24 @@ class BottomBar extends StatelessWidget {
                   icon: "assets/icons/adminDashIcon.svg",
                   name: "Admin",
                   index: 3,
+                ),
+                if(profPro.loggedRole=='Leader')
+                bottomItem(
+                  icon: "assets/icons/studentAddIcon.svg",
+                  name: "Register",
+                  index: 4,
+                ),
+                if(profPro.loggedRole=='Leader')
+                bottomItem(
+                  icon: "assets/icons/registerIcon.svg",
+                  name: "List",
+                  index: 5,
+                ),
+                if(profPro.loggedRole=='Judge')
+                bottomItem(
+                  icon: "assets/icons/registerIcon.svg",
+                  name: "Judge",
+                  index: 6,
                 ),
               ],
             );
