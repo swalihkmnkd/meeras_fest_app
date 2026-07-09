@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meeras_fest_app/adminProvider.dart';
 import 'package:meeras_fest_app/home_provider.dart';
 import 'package:meeras_fest_app/profileProvider.dart';
+import 'package:meeras_fest_app/register_provider.dart';
 import 'package:meeras_fest_app/resultProvider.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +16,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ResultProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => StudentEntryProvider()),
         // Add more providers here
       ],
       child: const MyApp(),
