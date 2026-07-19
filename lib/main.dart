@@ -7,6 +7,7 @@ import 'package:meeras_fest_app/resultProvider.dart';
 import 'package:provider/provider.dart';
 
 import 'bottom_bar.dart';
+import 'judge_provider.dart';
 
 void main() {
   runApp(
@@ -17,6 +18,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => StudentEntryProvider()),
+        ChangeNotifierProvider(create: (_) => JudgeProvider()),
         // Add more providers here
       ],
       child: const MyApp(),

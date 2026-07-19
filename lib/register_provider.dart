@@ -74,6 +74,18 @@ class StudentEntryProvider extends ChangeNotifier {
     return null;
   }
 
+  int expandedIndex = -1;
+
+  void toggleExpand(int index) {
+    if (expandedIndex == index) {
+      expandedIndex = -1;
+    } else {
+      expandedIndex = index;
+    }
+    notifyListeners();
+  }
+
+  bool isExpanded(int index) => expandedIndex == index;
   @override
   void dispose() {
     nameController.dispose();

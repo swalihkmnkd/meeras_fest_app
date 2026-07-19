@@ -23,7 +23,7 @@ class BottomBar extends StatelessWidget {
       AdminScreen(),
       RegisterScreen(),
       ListRegistrationScreen(),
-      JudgementScreen()
+      JudgePanelPage()
     ];
 
     return Scaffold(
