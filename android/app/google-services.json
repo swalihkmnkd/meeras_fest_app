@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "730013483269",
+    "project_id": "meeras-fest-2027",
+    "storage_bucket": "meeras-fest-2027.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730013483269:android:d6c49e2a68f8e84798f76c",
+        "android_client_info": {
+          "package_name": "com.example.meeras_fest_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSDW7ceUkBAa3V7d-F4iLcHREQlFUneuA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
