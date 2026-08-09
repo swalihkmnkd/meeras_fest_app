@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:meeras_fest_app/resultProvider.dart';
+import 'package:meeras_fest_app/result/resultProvider.dart';
 import 'package:provider/provider.dart';
 
-import 'home_screen.dart';
+import '../home/home_screen.dart';
 
 class ResultScreen extends StatelessWidget {
   const ResultScreen({super.key});

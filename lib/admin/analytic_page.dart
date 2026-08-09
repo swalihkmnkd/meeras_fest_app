@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'animated_graph.dart';
+
 class AnalyticPage extends StatelessWidget {
   const AnalyticPage({super.key});
 
@@ -11,17 +12,17 @@ class AnalyticPage extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
           child: Container(
-            margin: EdgeInsets.only(right:10),
+            margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.2),
+                  color: Colors.grey.withOpacity(0.2),
                   blurRadius: 8,
                   spreadRadius: 1,
-                  offset: Offset(0, 3),
+                  offset: const Offset(0, 3),
                 ),
               ],
               color: Colors.white,
@@ -33,33 +34,32 @@ class AnalyticPage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(Icons.bar_chart_rounded,color: Color(0xff667EEA),size: 17,),
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Icon(Icons.bar_chart_rounded, color: Color(0xff667EEA), size: 17),
                       ),
-                      Text("Team Performance",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff1F2937)),),
+                      Text("Team Performance",
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xff1F2937))),
                     ],
                   ),
-                  AnimatedBarGraph(
-                    values: [25, 40, 60, 80],
-                  )
+                  const AnimatedBarGraph(values: [25, 40, 60, 80]),
                 ],
               ),
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0,vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
           child: Container(
-            margin: EdgeInsets.only(right:10),
+            margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.2),
+                  color: Colors.grey.withOpacity(0.2),
                   blurRadius: 8,
                   spreadRadius: 1,
-                  offset: Offset(0, 3),
+                  offset: const Offset(0, 3),
                 ),
               ],
               color: Colors.white,
@@ -75,24 +75,26 @@ class AnalyticPage extends StatelessWidget {
                         padding: const EdgeInsets.all(8.0),
                         child: SvgPicture.asset(
                           "assets/icons/resultIcon.svg",
-                          height: 15,width: 15,
-                          colorFilter: ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
+                          height: 15,
+                          width: 15,
+                          colorFilter: const ColorFilter.mode(Color(0xffFF8E53), BlendMode.srcIn),
                         ),
                       ),
-                      Text("Current Standings",style: GoogleFonts.inter(fontSize: 10,fontWeight: FontWeight.w600,color: Color(0xff1F2937)),),
+                      Text("Current Standings",
+                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xff1F2937))),
                     ],
                   ),
                   ListView.separated(
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount:4,
+                    itemCount: 4,
                     separatorBuilder: (context, index) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       return Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: Color(0xffF9FAFB),
+                          color: const Color(0xffF9FAFB),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(10),
@@ -101,25 +103,14 @@ class AnalyticPage extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   "Phonix",
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff1F2937),
-                                  ),
+                                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: const Color(0xff1F2937)),
                                 ),
                               ),
-
-                              /// POINTS
                               Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: Text(
                                   "450 pts",
-                                  style:
-                                  GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xff667EEA),
-                                  ),
+                                  style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xff667EEA)),
                                 ),
                               ),
                             ],

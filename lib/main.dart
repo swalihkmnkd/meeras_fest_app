@@ -1,15 +1,22 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:meeras_fest_app/adminProvider.dart';
-import 'package:meeras_fest_app/home_provider.dart';
-import 'package:meeras_fest_app/profileProvider.dart';
-import 'package:meeras_fest_app/register_provider.dart';
-import 'package:meeras_fest_app/resultProvider.dart';
+import 'package:meeras_fest_app/admin/adminProvider.dart';
+import 'package:meeras_fest_app/home/home_provider.dart';
+import 'package:meeras_fest_app/profile/profileProvider.dart';
+import 'package:meeras_fest_app/registration/register_provider.dart';
+import 'package:meeras_fest_app/result/resultProvider.dart';
 import 'package:provider/provider.dart';
 
-import 'bottom_bar.dart';
-import 'judge_provider.dart';
+import 'firebase_options.dart';
+import 'home/bottom_bar.dart';
+import 'judges/judge_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -29,7 +36,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,8 +44,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  BottomBar(),
+      home: BottomBar(),
     );
   }
 }
-

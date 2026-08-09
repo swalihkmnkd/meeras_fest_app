@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:meeras_fest_app/home_provider.dart';
-import 'package:meeras_fest_app/profileProvider.dart';
+import 'package:meeras_fest_app/home/home_provider.dart';
+import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {

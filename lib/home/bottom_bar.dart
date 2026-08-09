@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:meeras_fest_app/adminScreen.dart';
-import 'package:meeras_fest_app/home_provider.dart';
-import 'package:meeras_fest_app/home_screen.dart';
-import 'package:meeras_fest_app/judgement_screen.dart';
-import 'package:meeras_fest_app/list_registration_screen.dart';
-import 'package:meeras_fest_app/profileProvider.dart';
-import 'package:meeras_fest_app/profile_screen.dart';
-import 'package:meeras_fest_app/register_screen.dart';
-import 'package:meeras_fest_app/result_screen.dart';
+import 'package:meeras_fest_app/admin/adminScreen.dart';
+import 'package:meeras_fest_app/home/home_provider.dart';
+import 'package:meeras_fest_app/home/home_screen.dart';
+import 'package:meeras_fest_app/judges/judgement_screen.dart';
+import 'package:meeras_fest_app/registration/list_registration_screen.dart';
+import 'package:meeras_fest_app/profile/profileProvider.dart';
+import 'package:meeras_fest_app/profile/profile_screen.dart';
+import 'package:meeras_fest_app/registration/register_screen.dart';
+import 'package:meeras_fest_app/result/result_screen.dart';
 import 'package:provider/provider.dart';
 
 class BottomBar extends StatelessWidget {

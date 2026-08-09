@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class AnimatedBarGraph extends StatefulWidget {
   final List<double> values;
   final double maxValue;
@@ -44,7 +43,6 @@ class _AnimatedBarGraphState extends State<AnimatedBarGraph> {
             children: [
               Text("${value.toInt()}"),
               const SizedBox(height: 8),
-
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 1200),
                 curve: Curves.easeOutCubic,
@@ -52,8 +50,7 @@ class _AnimatedBarGraphState extends State<AnimatedBarGraph> {
                 builder: (context, animatedValue, child) {
                   return Container(
                     width: widget.barWidth,
-                    height:
-                    (animatedValue / widget.maxValue) * 150,
+                    height: (animatedValue / widget.maxValue) * 150,
                     decoration: BoxDecoration(
                       color: colors[index % colors.length],
                       borderRadius: BorderRadius.circular(8),
@@ -61,9 +58,8 @@ class _AnimatedBarGraphState extends State<AnimatedBarGraph> {
                   );
                 },
               ),
-
               const SizedBox(height: 8),
-              Text("Phonix",style: TextStyle(fontSize: 10,color: Colors.black87),),
+              const Text("Phonix", style: TextStyle(fontSize: 10, color: Colors.black87)),
             ],
           );
         }),

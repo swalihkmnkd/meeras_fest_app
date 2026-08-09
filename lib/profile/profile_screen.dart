@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:meeras_fest_app/home_provider.dart';
-import 'package:meeras_fest_app/profileProvider.dart';
+import 'package:meeras_fest_app/home/home_provider.dart';
+import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatelessWidget {
