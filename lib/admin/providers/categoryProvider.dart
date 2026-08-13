@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'adminConstents.dart';
-import 'categoryModel.dart';
+import '../adminConstents.dart';
+import '../models/categoryModel.dart';
 
 class CategoryProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('categories');

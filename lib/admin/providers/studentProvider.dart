@@ -5,10 +5,10 @@ import 'package:excel/excel.dart' as xls;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import 'studentModel.dart';
+import '../models/studentModel.dart';
 
 class StudentProvider extends ChangeNotifier {
-  final _collection = FirebaseFirestore.instance.collection('students');
+  final _collection = FirebaseFirestore.instance.collection('STUDENTS');
 
   // Required headers must be present. 'division' is optional -- if the sheet
   // doesn't have that column, division is simply left blank for every row.
@@ -47,7 +47,7 @@ class StudentProvider extends ChangeNotifier {
   /// docId is also stored as a field inside the document itself.
   Map<String, dynamic> _dataWithDocId(StudentRow s, String docId) => {
     ...s.toMap(),
-    'docId': docId,
+    'STUDENT_ID': docId,
   };
 
   // =======================================================================
@@ -225,7 +225,7 @@ class StudentProvider extends ChangeNotifier {
     isLoadingList = true;
     notifyListeners();
     try {
-      final snap = await _collection.orderBy('name').get();
+      final snap = await _collection.orderBy('NAME').get();
       allStudents = snap.docs.map((d) => StudentRow.fromMap(d.data())).toList();
     } catch (e) {
       errorMessage = 'Failed to load students: $e';

@@ -5,7 +5,7 @@ import '../judges/judge_provider.dart';
 import 'adminWidgets.dart';
 
 import 'judgesFormPage.dart';
-import 'judgesModel.dart';
+import 'models/judgesModel.dart';
 
 class JudgesListPage extends StatelessWidget {
   const JudgesListPage({super.key});

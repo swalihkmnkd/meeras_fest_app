@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:meeras_fest_app/admin/teamsProvider.dart';
+import 'package:meeras_fest_app/admin/providers/teamsProvider.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';

@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'teamModel.dart';
+import '../models/teamModel.dart';
 
 class TeamProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('teams');

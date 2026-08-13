@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'addStudentPage.dart';
-import 'adminProvider.dart';
+import 'providers/adminProvider.dart';
 import 'adminWidgets.dart';
 import 'analytic_page.dart';
 import 'categoryListPage.dart';

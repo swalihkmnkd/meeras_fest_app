@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
 import 'programFormPage.dart';
-import 'programModel.dart';
-import 'programProvider.dart';
+import 'models/programModel.dart';
+import 'providers/programProvider.dart';
 
 class ProgramListPage extends StatelessWidget {
   const ProgramListPage({super.key});

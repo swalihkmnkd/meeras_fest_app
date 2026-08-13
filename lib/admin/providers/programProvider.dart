@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'programModel.dart';
+import '../models/programModel.dart';
 
 class ProgramProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('programs');

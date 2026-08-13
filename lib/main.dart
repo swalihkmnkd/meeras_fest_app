@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:meeras_fest_app/admin/adminProvider.dart';
+import 'package:meeras_fest_app/admin/providers/adminProvider.dart';
 import 'package:meeras_fest_app/home/home_provider.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:meeras_fest_app/registration/register_provider.dart';

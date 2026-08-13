@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
 import 'caegoryFormPage.dart';
-import 'categoryModel.dart';
-import 'categoryProvider.dart';
+import 'models/categoryModel.dart';
+import 'providers/categoryProvider.dart';
 
 class CategoryListPage extends StatelessWidget {
   const CategoryListPage({super.key});

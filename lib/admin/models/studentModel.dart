@@ -17,19 +17,19 @@ class StudentRow {
   // Excel sheet, etc.) sends in, Firestore always ends up storing
   // 'MALE' / 'FEMALE' / 'OTHER' consistently.
   Map<String, dynamic> toMap() => {
-    'name': name,
-    'class': studentClass,
-    'division': division,
-    'gender': gender.toUpperCase(),
-    'rollNumber': rollNumber,
+    'NAME': name,
+    'CLASS': studentClass,
+    'DIVISION': division,
+    'GENDER': gender,
+    'ROLL_NUMBER': rollNumber,
   };
 
   factory StudentRow.fromMap(Map<String, dynamic> map) => StudentRow(
-    name: map['name']?.toString() ?? '',
-    studentClass: map['class']?.toString() ?? '',
-    division: map['division']?.toString() ?? '',
-    gender: map['gender']?.toString() ?? '',
-    rollNumber: map['rollNumber']?.toString() ?? '',
+    name: map['NAME']?.toString() ?? '',
+    studentClass: map['CLASS']?.toString() ?? '',
+    division: map['DIVISION']?.toString() ?? '',
+    gender: map['GENDER']?.toString() ?? '',
+    rollNumber: map['ROLL_NUMBER']?.toString() ?? '',
   );
 
   StudentRow copyWith({

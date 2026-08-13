@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
-import 'programProvider.dart';
+import 'providers/programProvider.dart';
 
 class ProgramFormPage extends StatelessWidget {
   const ProgramFormPage({super.key});

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
-import 'studentModel.dart';
-import 'studentProvider.dart';
+import 'models/studentModel.dart';
+import 'providers/studentProvider.dart';
 
 class AddStudentsPage extends StatelessWidget {
   const AddStudentsPage({super.key});
@@ -247,7 +248,7 @@ class _AddStudentsViewState extends State<_AddStudentsView> {
             Text('Uploading... ${(100 * provider.uploadProgress).toStringAsFixed(0)}%'),
           ],
         )
-            : const Text('Upload to Firebase', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            : const Text('Upload', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -354,7 +355,7 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
   // automatically via _genderOptions.first -- never hardcode a literal
   // like 'Male' elsewhere, or it can drift out of sync with this list
   // and retrigger the DropdownButton "exactly one match" assertion.
-  static const _genderOptions = ['Male', 'Female', 'Other'];
+  static const _genderOptions = ['Male', 'Female'];
 
   static String _normalizeGender(String? raw) {
     if (raw == null || raw.trim().isEmpty) return _genderOptions.first;
@@ -469,6 +470,10 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
                   children: [
                     Expanded(
                       child: TextFormField(
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         controller: _classCt,
                         decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
                         validator: (v) => (v == null || v.trim().isEmpty) ? 'Class is required' : null,
@@ -478,6 +483,11 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
                     Expanded(
                       child: TextFormField(
                         controller: _divisionCt,
+                        textCapitalization: TextCapitalization.characters,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+                          UpperCaseTextFormatter(),
+                        ],
                         decoration: const InputDecoration(labelText: 'Division', border: OutlineInputBorder()),
                         // Division is optional -- no validator.
                       ),
@@ -497,6 +507,10 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   controller: _rollCt,
                   decoration: const InputDecoration(labelText: 'Roll Number', border: OutlineInputBorder()),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Roll number is required' : null,
@@ -527,6 +541,20 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
           ),
         );
       },
+    );
+  }
+}
+
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    return newValue.copyWith(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+      composing: TextRange.empty,
     );
   }
 }

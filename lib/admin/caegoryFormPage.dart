@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
-import 'categoryProvider.dart';
+import 'providers/categoryProvider.dart';
 
 class CategoryFormPage extends StatelessWidget {
   const CategoryFormPage({super.key});
