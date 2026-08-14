@@ -74,7 +74,7 @@ class JudgeProvider extends ChangeNotifier {
     }
   }
   final _collection = FirebaseFirestore.instance.collection('judges');
-  final _categoryCollection = FirebaseFirestore.instance.collection('categories');
+  final _categoryCollection = FirebaseFirestore.instance.collection('CATEGORIES');
 
   List<JudgeModel> judges = [];
   List<String> categoryNames = [];

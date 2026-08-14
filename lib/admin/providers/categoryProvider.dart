@@ -5,7 +5,7 @@ import '../adminConstents.dart';
 import '../models/categoryModel.dart';
 
 class CategoryProvider extends ChangeNotifier {
-  final _collection = FirebaseFirestore.instance.collection('categories');
+  final _collection = FirebaseFirestore.instance.collection('CATEGORIES');
 
   List<CategoryModel> categories = [];
   bool isLoading = false;
@@ -25,7 +25,7 @@ class CategoryProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      final snap = await _collection.orderBy('createdAt', descending: true).get();
+      final snap = await _collection.orderBy('CREATED_AT', descending: true).get();
       categories = snap.docs.map((d) => CategoryModel.fromDoc(d)).toList();
       errorMessage = null;
     } catch (e) {

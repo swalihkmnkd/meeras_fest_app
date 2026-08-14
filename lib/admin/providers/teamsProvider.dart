@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/teamModel.dart';
 
 class TeamProvider extends ChangeNotifier {
-  final _collection = FirebaseFirestore.instance.collection('teams');
+  final _collection = FirebaseFirestore.instance.collection('TEAMS');
 
   List<TeamModel> teams = [];
   bool isLoading = false;
@@ -13,11 +13,17 @@ class TeamProvider extends ChangeNotifier {
 
   // ---- Form state (used by TeamsFormPage) ----
   final TextEditingController nameCtrl = TextEditingController();
+  final TextEditingController teamIdCtrl = TextEditingController();
   final TextEditingController leaderCtrl = TextEditingController();
-  String? gender;
+  final TextEditingController assistantLeaderCtrl = TextEditingController();
+  final TextEditingController categoryCtrl = TextEditingController();
+  final TextEditingController userNameCtrl = TextEditingController();
+  final TextEditingController passwordCtrl = TextEditingController();
+  String? color;
   String? _editingId;
 
   bool get isEditing => _editingId != null;
+  String? get editingIdForStudents => _editingId;
 
   Future<void> fetchTeams() async {
     isLoading = true;
@@ -37,28 +43,41 @@ class TeamProvider extends ChangeNotifier {
   void startCreate() {
     _editingId = null;
     nameCtrl.clear();
+    teamIdCtrl.clear();
     leaderCtrl.clear();
-    gender = null;
+    assistantLeaderCtrl.clear();
+    categoryCtrl.clear();
+    userNameCtrl.clear();
+    passwordCtrl.clear();
+    color = null;
     notifyListeners();
   }
 
   void startEdit(TeamModel team) {
     _editingId = team.id;
     nameCtrl.text = team.name;
+    teamIdCtrl.text = team.teamId;
     leaderCtrl.text = team.leaderName;
-    gender = team.gender;
+    assistantLeaderCtrl.text = team.assistantLeader;
+    categoryCtrl.text = team.category;
+    userNameCtrl.text = team.userName;
+    passwordCtrl.text = team.password;
+    color = team.color;
     notifyListeners();
   }
 
-  void setGender(String value) {
-    gender = value;
+  void setColor(String value) {
+    color = value;
     notifyListeners();
   }
 
   Future<String?> save() async {
     if (nameCtrl.text.trim().isEmpty) return 'Team name is required';
-    if (gender == null) return 'Please select a gender';
+    if (teamIdCtrl.text.trim().isEmpty) return 'Team ID is required';
     if (leaderCtrl.text.trim().isEmpty) return 'Team leader name is required';
+    if (color == null) return 'Please select a team color';
+    if (userNameCtrl.text.trim().isEmpty) return 'User name is required';
+    if (passwordCtrl.text.trim().isEmpty) return 'Password is required';
 
     isSaving = true;
     notifyListeners();
@@ -66,14 +85,22 @@ class TeamProvider extends ChangeNotifier {
       final model = TeamModel(
         id: _editingId ?? '',
         name: nameCtrl.text.trim(),
-        gender: gender!,
+        teamId: teamIdCtrl.text.trim(),
         leaderName: leaderCtrl.text.trim(),
+        assistantLeader: assistantLeaderCtrl.text.trim(),
+        category: categoryCtrl.text.trim(),
+        color: color!,
+        userName: userNameCtrl.text.trim(),
+        password: passwordCtrl.text.trim(),
       );
 
+      final data = model.toMap();
       if (_editingId == null) {
-        await _collection.add(model.toMap());
+        data['createdAt'] = FieldValue.serverTimestamp();
+        final doc = await _collection.add(data);
+        _editingId = doc.id;
       } else {
-        await _collection.doc(_editingId).update(model.toMap());
+        await _collection.doc(_editingId).update(data);
       }
       return null;
     } catch (e) {
@@ -96,7 +123,12 @@ class TeamProvider extends ChangeNotifier {
   @override
   void dispose() {
     nameCtrl.dispose();
+    teamIdCtrl.dispose();
     leaderCtrl.dispose();
+    assistantLeaderCtrl.dispose();
+    categoryCtrl.dispose();
+    userNameCtrl.dispose();
+    passwordCtrl.dispose();
     super.dispose();
   }
 }

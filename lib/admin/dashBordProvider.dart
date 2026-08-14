@@ -20,9 +20,9 @@ class DashboardProvider extends ChangeNotifier {
       final results = await Future.wait([
         _db.collection('programs').count().get(),
         _db.collection('STUDENTS').count().get(),
-        _db.collection('teams').count().get(),
+        _db.collection('TEAMS').count().get(),
         _db.collection('judges').count().get(),
-        _db.collection('categories').count().get(),
+        _db.collection('CATEGORIES').count().get(),
       ]);
 
       programCount = results[0].count ?? 0;

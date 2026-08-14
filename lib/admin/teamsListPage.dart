@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'adminWidgets.dart';
 import 'models/teamModel.dart';
 
-
 class TeamsListPage extends StatelessWidget {
   const TeamsListPage({super.key});
 
@@ -93,7 +92,7 @@ class _TeamsListView extends StatelessWidget {
                 final team = provider.teams[index];
                 return AdminListTile(
                   title: team.name,
-                  subtitle: '${team.gender} • Leader: ${team.leaderName}',
+                  subtitle: '${team.category} • Leader: ${team.leaderName}',
                   leadingIcon: Icons.groups_rounded,
                   leadingColor: const Color(0xFF3B82F6),
                   onEdit: () => _openForm(context, team: team),

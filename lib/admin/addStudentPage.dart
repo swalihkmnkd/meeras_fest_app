@@ -328,7 +328,7 @@ class _ModeButton extends StatelessWidget {
 // =====================================================================
 
 class _IndividualStudentForm extends StatefulWidget {
-  final StudentRow? existing; // null => add mode, non-null => edit mode
+  final StudentModel? existing; // null => add mode, non-null => edit mode
 
   const _IndividualStudentForm({this.existing});
 
@@ -343,6 +343,9 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
   late final TextEditingController _divisionCt;
   late final TextEditingController _rollCt;
   late String _gender;
+  late String _teamId;
+  late String _teamName;
+  late String _teamColor;
 
   // The exact strings used by the dropdown items below. Firestore data may
   // have been written with different casing (e.g. "FEMALE", "female"), and
@@ -375,6 +378,9 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
     _divisionCt = TextEditingController(text: s?.division ?? '');
     _rollCt = TextEditingController(text: s?.rollNumber ?? '');
     _gender = _normalizeGender(s?.gender);
+    _teamId=s?.teamId??'';
+    _teamName=s?.teamName??'';
+    _teamColor=s?.teamColor??'';
   }
 
   @override
@@ -390,12 +396,12 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<StudentProvider>();
-    final student = StudentRow(
+    final student = StudentModel(
       name: _nameCt.text.trim(),
       studentClass: _classCt.text.trim(),
       division: _divisionCt.text.trim(),
       gender: _gender,
-      rollNumber: _rollCt.text.trim(),
+      rollNumber: _rollCt.text.trim(), teamId: _teamId, teamName:_teamName, teamColor: _teamColor,
     );
 
     // Capture the Navigator BEFORE any pop happens below. In edit mode this
@@ -431,6 +437,9 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
         _classCt.clear();
         _divisionCt.clear();
         _rollCt.clear();
+        _teamId='';
+        _teamName='';
+        _teamColor='';
         setState(() => _gender = _genderOptions.first);
       }
 
@@ -580,7 +589,7 @@ class _StudentListViewState extends State<_StudentListView> {
 
   static const String _allOption = 'All';
 
-  void _openEditDialog(BuildContext context, StudentRow student) {
+  void _openEditDialog(BuildContext context, StudentModel student) {
     final provider = context.read<StudentProvider>();
     showDialog(
       context: context,
@@ -597,7 +606,7 @@ class _StudentListViewState extends State<_StudentListView> {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, StudentRow student) async {
+  Future<void> _confirmDelete(BuildContext context, StudentModel student) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -626,7 +635,7 @@ class _StudentListViewState extends State<_StudentListView> {
   /// Builds the distinct, sorted set of values for a given field across all
   /// students, prefixed with the "All" option. Blank values are excluded
   /// from the option list (there's nothing meaningful to filter by there).
-  List<String> _optionsFor(List<StudentRow> all, String Function(StudentRow) selector) {
+  List<String> _optionsFor(List<StudentModel> all, String Function(StudentModel) selector) {
     final values = all.map(selector).where((v) => v.trim().isNotEmpty).toSet().toList()
       ..sort();
     return [_allOption, ...values];

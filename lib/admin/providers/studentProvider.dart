@@ -19,7 +19,7 @@ class StudentProvider extends ChangeNotifier {
   // Excel upload state
   // ---------------------------------------------------------------------
   String? fileName;
-  List<StudentRow> students = [];
+  List<StudentModel> students = [];
   bool isParsing = false;
   bool isUploading = false;
   double uploadProgress = 0;
@@ -28,7 +28,7 @@ class StudentProvider extends ChangeNotifier {
   // ---------------------------------------------------------------------
   // Student list / individual CRUD state
   // ---------------------------------------------------------------------
-  List<StudentRow> allStudents = [];
+  List<StudentModel> allStudents = [];
   bool isLoadingList = false;
   bool isSavingStudent = false;
 
@@ -40,12 +40,12 @@ class StudentProvider extends ChangeNotifier {
   /// Format: Class_Division_GENDER_RollNumber (e.g. "6_B_MALE_001").
   /// Gender is always uppercased here so the ID stays consistent no matter
   /// what casing a caller (dropdown, Excel sheet, etc.) passes in.
-  String _docIdFor(StudentRow s) =>
+  String _docIdFor(StudentModel s) =>
       '${s.studentClass}_${s.division}_${s.gender.toUpperCase()}_${s.rollNumber}';
 
   /// Bundles the student's map data together with its own docId, so the
   /// docId is also stored as a field inside the document itself.
-  Map<String, dynamic> _dataWithDocId(StudentRow s, String docId) => {
+  Map<String, dynamic> _dataWithDocId(StudentModel s, String docId) => {
     ...s.toMap(),
     'STUDENT_ID': docId,
   };
@@ -106,7 +106,7 @@ class StudentProvider extends ChangeNotifier {
         );
       }
 
-      final List<StudentRow> parsed = [];
+      final List<StudentModel> parsed = [];
       for (int r = 1; r < sheet.maxRows; r++) {
         final row = sheet.row(r);
 
@@ -129,12 +129,12 @@ class StudentProvider extends ChangeNotifier {
           continue;
         }
 
-        parsed.add(StudentRow(
+        parsed.add(StudentModel(
           name: name,
           studentClass: studentClass,
           division: division,
           gender: gender,
-          rollNumber: rollNumber,
+          rollNumber: rollNumber, teamId: '', teamName: '', teamColor: '',
         ));
       }
 
@@ -226,7 +226,7 @@ class StudentProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final snap = await _collection.orderBy('NAME').get();
-      allStudents = snap.docs.map((d) => StudentRow.fromMap(d.data())).toList();
+      allStudents = snap.docs.map((d) => StudentModel.fromMap(d.data())).toList();
     } catch (e) {
       errorMessage = 'Failed to load students: $e';
     }
@@ -246,7 +246,7 @@ class StudentProvider extends ChangeNotifier {
     return exists ? 'A student with this Roll Number already exists.' : null;
   }
 
-  Future<String?> addSingleStudent(StudentRow student) async {
+  Future<String?> addSingleStudent(StudentModel student) async {
     final dupError = _duplicateRollNumberError(student.rollNumber);
     if (dupError != null) {
       errorMessage = dupError;
@@ -276,7 +276,7 @@ class StudentProvider extends ChangeNotifier {
   /// because the doc ID is composite (class_division_gender_roll), so if
   /// any of those fields changed, the old document has to be deleted and
   /// the data re-written under the new ID.
-  Future<String?> updateStudent(StudentRow original, StudentRow updated) async {
+  Future<String?> updateStudent(StudentModel original, StudentModel updated) async {
     final dupError = _duplicateRollNumberError(
       updated.rollNumber,
       excludingRollNumber: original.rollNumber,
@@ -319,7 +319,7 @@ class StudentProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> deleteStudent(StudentRow student) async {
+  Future<String?> deleteStudent(StudentModel student) async {
     try {
       await _collection.doc(_docIdFor(student)).delete();
       allStudents.removeWhere((s) => s.rollNumber == student.rollNumber);

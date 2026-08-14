@@ -20,22 +20,22 @@ class CategoryModel {
   String get classRangeLabel => 'Class $classFrom - $classTo';
 
   Map<String, dynamic> toMap() => {
-    'name': name,
-    'gender': gender,
-    'classFrom': classFrom,
-    'classTo': classTo,
-    'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+    'NAME': name,
+    'GENDER': gender,
+    'CLASS_FROM': classFrom,
+    'CLASS_TO': classTo,
+    'CREATED_AT': createdAt ?? FieldValue.serverTimestamp(),
   };
 
   factory CategoryModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return CategoryModel(
       id: doc.id,
-      name: data['name'] ?? '',
-      gender: data['gender'] ?? 'Mixed',
-      classFrom: data['classFrom'] ?? '',
-      classTo: data['classTo'] ?? '',
-      createdAt: data['createdAt'],
+      name: data['NAME'] ?? '',
+      gender: data['GENDER'] ?? 'Mixed',
+      classFrom: data['CLASS_FROM'] ?? '',
+      classTo: data['CLASS_TO'] ?? '',
+      createdAt: data['CREATED_AT'],
     );
   }
 }

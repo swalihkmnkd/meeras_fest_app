@@ -30,7 +30,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     }
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance.collection('categories').add({
+      await FirebaseFirestore.instance.collection('CATEGORIES').add({
         'name': _nameCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),

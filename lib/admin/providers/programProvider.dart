@@ -5,7 +5,7 @@ import '../models/programModel.dart';
 
 class ProgramProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('programs');
-  final _categoryCollection = FirebaseFirestore.instance.collection('categories');
+  final _categoryCollection = FirebaseFirestore.instance.collection('CATEGORIES');
 
   List<ProgramModel> programs = [];
   List<String> categoryNames = [];
