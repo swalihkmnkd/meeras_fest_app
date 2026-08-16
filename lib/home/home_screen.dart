@@ -154,7 +154,7 @@ class HomeScreen extends StatelessWidget {
                         builder: (context,profilePro,child) {
                           return InkWell(
                             onTap: (){
-                              profilePro.changeLoginRole("Gust");
+                              profilePro.logout();
                             },
                             child: Container(
                               height: 90,

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'adminWidgets.dart';
 import 'addStudentPage.dart';
 import 'categoryListPage.dart';
-import 'dashBordProvider.dart';
+import 'providers/dashBordProvider.dart';
 import 'judgesListPage.dart';
 import 'programListPage.dart';
 import 'teamsListPage.dart';
@@ -92,7 +92,7 @@ class _OverviewView extends StatelessWidget {
                     color: const Color(0xFF10B981),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ProgramListPage()),
+                      MaterialPageRoute(builder: (_) => const ProgramsListPage()),
                     ),
                   ),
                   AdminActionCard(

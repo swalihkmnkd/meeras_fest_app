@@ -60,7 +60,7 @@ class BottomBar extends StatelessWidget {
                   name: "Results",
                   index: 1,
                 ),
-                if(profPro.loggedRole=='User'||profPro.loggedRole=='Gust')
+                if(profPro.loggedRole=='User'||profPro.loggedRole=='Guest')
                 bottomItem(
                   icon: "assets/icons/profileIcon.svg",
                   name: "Profile",

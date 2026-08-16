@@ -7,6 +7,8 @@ import 'package:meeras_fest_app/registration/register_provider.dart';
 import 'package:meeras_fest_app/result/resultProvider.dart';
 import 'package:provider/provider.dart';
 
+import 'admin/providers/programProvider.dart';
+import 'admin/providers/score_calculator_provider.dart';
 import 'firebase_options.dart';
 import 'home/bottom_bar.dart';
 import 'judges/judge_provider.dart';
@@ -26,6 +28,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AdminProvider()),
         ChangeNotifierProvider(create: (_) => StudentEntryProvider()),
         ChangeNotifierProvider(create: (_) => JudgeProvider()),
+        ChangeNotifierProvider(create: (_) => ProgramProvider()),
+        ChangeNotifierProvider(create: (_) => ScoreCalculatorProvider()),
         // Add more providers here
       ],
       child: const MyApp(),
