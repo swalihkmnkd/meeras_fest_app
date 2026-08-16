@@ -18,7 +18,11 @@ class CategoryProvider extends ChangeNotifier {
   String? classFrom;
   String? classTo;
   String? _editingId;
+  CategoryProvider() {
+    fetchCategories();
+  }
 
+  List<String> get categoryNames => categories.map((c) => c.name).toList();
   bool get isEditing => _editingId != null;
 
   Future<void> fetchCategories() async {

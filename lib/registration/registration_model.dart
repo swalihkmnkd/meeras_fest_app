@@ -8,7 +8,7 @@ class RegistrationModel {
   final String programId;
   final String programName;
   final String studentCategory;
-  final String programType; // Stage / Non-Stage / General
+  final String programCategory; // Stage / Non Stage / General
   final Timestamp? createdAt;
 
   RegistrationModel({
@@ -19,7 +19,7 @@ class RegistrationModel {
     required this.programId,
     required this.programName,
     required this.studentCategory,
-    required this.programType,
+    required this.programCategory,
     this.createdAt,
   });
 
@@ -30,7 +30,7 @@ class RegistrationModel {
     'PROGRAM_ID': programId,
     'PROGRAM_NAME': programName,
     'STUDENT_CATEGORY': studentCategory,
-    'PROGRAM_TYPE': programType,
+    'PROGRAM_CATEGORY': programCategory,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
   };
 
@@ -44,7 +44,7 @@ class RegistrationModel {
       programId: data['PROGRAM_ID'] ?? '',
       programName: data['PROGRAM_NAME'] ?? '',
       studentCategory: data['STUDENT_CATEGORY'] ?? '',
-      programType: data['PROGRAM_TYPE'] ?? '',
+      programCategory: data['PROGRAM_CATEGORY'] ?? '',
       createdAt: data['createdAt'],
     );
   }

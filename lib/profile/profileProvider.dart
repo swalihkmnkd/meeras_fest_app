@@ -48,6 +48,7 @@ class ProfileProvider extends ChangeNotifier {
       loggedRole = savedRole;
       isLoggedIn = true;
       teamId = prefs.getString(_kTeamId);
+      print(teamId);
       teamName = prefs.getString(_kTeamName);
       teamLeader = prefs.getString(_kTeamLeader);
       teamCategory = prefs.getString(_kTeamCategory);

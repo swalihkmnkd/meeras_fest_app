@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:meeras_fest_app/admin/providers/adminProvider.dart';
+import 'package:meeras_fest_app/admin/providers/categoryProvider.dart';
 import 'package:meeras_fest_app/home/home_provider.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:meeras_fest_app/registration/register_provider.dart';
@@ -26,10 +27,11 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ResultProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => StudentEntryProvider()),
+        ChangeNotifierProvider(create: (_) => RegistrationProvider ()),
         ChangeNotifierProvider(create: (_) => JudgeProvider()),
         ChangeNotifierProvider(create: (_) => ProgramProvider()),
         ChangeNotifierProvider(create: (_) => ScoreCalculatorProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
         // Add more providers here
       ],
       child: const MyApp(),
