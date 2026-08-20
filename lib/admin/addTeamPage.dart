@@ -4,6 +4,8 @@ import 'adminScreen.dart';
 import 'adminWidgets.dart';
 import 'models/teamModel.dart';
 
+const List<String> teamCategoryOptions = ['Boys', 'Girls', 'Mixed'];
+
 class AddTeamsPage extends StatefulWidget {
   const AddTeamsPage({super.key});
 
@@ -16,10 +18,10 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
   final _teamIdCtrl = TextEditingController();
   final _leaderCtrl = TextEditingController();
   final _assistantLeaderCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
   final _userNameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   String? _selectedColor;
+  String? _selectedCategory;
   bool _saving = false;
   bool _obscurePassword = true;
 
@@ -29,7 +31,6 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
     _teamIdCtrl.dispose();
     _leaderCtrl.dispose();
     _assistantLeaderCtrl.dispose();
-    _categoryCtrl.dispose();
     _userNameCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -52,6 +53,10 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
       _showSnack('Please select a team color');
       return;
     }
+    if (_selectedCategory == null) {
+      _showSnack('Please select a team category');
+      return;
+    }
     if (_userNameCtrl.text.trim().isEmpty) {
       _showSnack('User name is required');
       return;
@@ -68,7 +73,7 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
         'TEAM_ID': _teamIdCtrl.text.trim(),
         'TEAM_LEADER': _leaderCtrl.text.trim(),
         'ASSISTANT_LEADER': _assistantLeaderCtrl.text.trim(),
-        'TEAM_CATEGORY': _categoryCtrl.text.trim(),
+        'TEAM_CATEGORY': _selectedCategory,
         'TEAM_COLOR': _selectedColor,
         'USER_NAME': _userNameCtrl.text.trim(),
         'PASSWORD': _passwordCtrl.text.trim(),
@@ -80,10 +85,12 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
       _teamIdCtrl.clear();
       _leaderCtrl.clear();
       _assistantLeaderCtrl.clear();
-      _categoryCtrl.clear();
       _userNameCtrl.clear();
       _passwordCtrl.clear();
-      setState(() => _selectedColor = null);
+      setState(() {
+        _selectedColor = null;
+        _selectedCategory = null;
+      });
     } catch (e) {
       _showSnack('Failed to add team: $e');
     } finally {
@@ -120,7 +127,39 @@ class _AddTeamsPageState extends State<AddTeamsPage> {
               const SizedBox(height: 14),
               AdminFormField(controller: _assistantLeaderCtrl, label: 'Assistant Leader', icon: Icons.star_half_rounded),
               const SizedBox(height: 14),
-              AdminFormField(controller: _categoryCtrl, label: 'Team Category', icon: Icons.category_rounded),
+
+              // Team category dropdown
+              Text('Team Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCategory,
+                    isExpanded: true,
+                    hint: const Text('Select a categoryss'),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    items: teamCategoryOptions.map((opt) {
+                      return DropdownMenuItem(
+                        value: opt,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.category_rounded, size: 18, color: Colors.grey),
+                            const SizedBox(width: 10),
+                            Text(opt),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _selectedCategory = value),
+                  ),
+                ),
+              ),
               const SizedBox(height: 14),
 
               // Team color dropdown

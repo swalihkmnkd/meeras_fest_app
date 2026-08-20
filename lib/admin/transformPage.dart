@@ -61,7 +61,41 @@ class _TeamsFormPageState extends State<TeamsFormPage> {
                   const SizedBox(height: 14),
                   AdminFormField(controller: provider.assistantLeaderCtrl, label: 'Assistant Leader', icon: Icons.star_half_rounded),
                   const SizedBox(height: 14),
-                  AdminFormField(controller: provider.categoryCtrl, label: 'Team Category', icon: Icons.category_rounded),
+
+                  // Team category dropdown
+                  Text('Team Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: provider.category,
+                        isExpanded: true,
+                        hint: const Text('Select a category'),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                        items: teamCategoryOptions.map((opt) {
+                          return DropdownMenuItem(
+                            value: opt,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.category_rounded, size: 18, color: Colors.grey),
+                                const SizedBox(width: 10),
+                                Text(opt),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) provider.setCategory(value);
+                        },
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 14),
 
                   // Team color dropdown
@@ -202,7 +236,7 @@ class _ManageStudentsTileState extends State<_ManageStudentsTile> {
             builder: (_) => StudentSelectionPage(
               teamId: teamId,
               teamName: widget.provider.nameCtrl.text.trim(),
-              teamCategory: widget.provider.categoryCtrl.text.trim(),
+              teamCategory: widget.provider.category ?? '',
               teamColor: colorOpt.color,
               teamColorName: colorOpt.name,
             ),

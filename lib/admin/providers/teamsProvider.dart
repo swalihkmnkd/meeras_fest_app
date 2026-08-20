@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../models/teamModel.dart';
 
+const List<String> teamCategoryOptions = ['Boys', 'Girls', 'Mixed'];
+
 class TeamProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('TEAMS');
 
@@ -16,10 +18,10 @@ class TeamProvider extends ChangeNotifier {
   final TextEditingController teamIdCtrl = TextEditingController();
   final TextEditingController leaderCtrl = TextEditingController();
   final TextEditingController assistantLeaderCtrl = TextEditingController();
-  final TextEditingController categoryCtrl = TextEditingController();
   final TextEditingController userNameCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
   String? color;
+  String? category;
   String? _editingId;
 
   bool get isEditing => _editingId != null;
@@ -46,10 +48,10 @@ class TeamProvider extends ChangeNotifier {
     teamIdCtrl.clear();
     leaderCtrl.clear();
     assistantLeaderCtrl.clear();
-    categoryCtrl.clear();
     userNameCtrl.clear();
     passwordCtrl.clear();
     color = null;
+    category = null;
     notifyListeners();
   }
 
@@ -59,10 +61,10 @@ class TeamProvider extends ChangeNotifier {
     teamIdCtrl.text = team.teamId;
     leaderCtrl.text = team.leaderName;
     assistantLeaderCtrl.text = team.assistantLeader;
-    categoryCtrl.text = team.category;
     userNameCtrl.text = team.userName;
     passwordCtrl.text = team.password;
     color = team.color;
+    category = team.category;
     notifyListeners();
   }
 
@@ -71,11 +73,17 @@ class TeamProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCategory(String value) {
+    category = value;
+    notifyListeners();
+  }
+
   Future<String?> save() async {
     if (nameCtrl.text.trim().isEmpty) return 'Team name is required';
     if (teamIdCtrl.text.trim().isEmpty) return 'Team ID is required';
     if (leaderCtrl.text.trim().isEmpty) return 'Team leader name is required';
     if (color == null) return 'Please select a team color';
+    if (category == null) return 'Please select a team category';
     if (userNameCtrl.text.trim().isEmpty) return 'User name is required';
     if (passwordCtrl.text.trim().isEmpty) return 'Password is required';
 
@@ -88,7 +96,7 @@ class TeamProvider extends ChangeNotifier {
         teamId: teamIdCtrl.text.trim(),
         leaderName: leaderCtrl.text.trim(),
         assistantLeader: assistantLeaderCtrl.text.trim(),
-        category: categoryCtrl.text.trim(),
+        category: category!,
         color: color!,
         userName: userNameCtrl.text.trim(),
         password: passwordCtrl.text.trim(),
@@ -126,7 +134,6 @@ class TeamProvider extends ChangeNotifier {
     teamIdCtrl.dispose();
     leaderCtrl.dispose();
     assistantLeaderCtrl.dispose();
-    categoryCtrl.dispose();
     userNameCtrl.dispose();
     passwordCtrl.dispose();
     super.dispose();
