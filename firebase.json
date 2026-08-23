@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"meeras-fest-2027","appId":"1:730013483269:android:d6c49e2a68f8e84798f76c","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"meeras-fest-2027","configurations":{"android":"1:730013483269:android:d6c49e2a68f8e84798f76c","ios":"1:730013483269:ios:0569c3cbef018f2c98f76c","web":"1:730013483269:web:fd6dca1e4025fd4f98f76c"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "meeras-fest-2027",
+          "appId": "1:730013483269:android:d6c49e2a68f8e84798f76c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "meeras-fest-2027",
+          "configurations": {
+            "android": "1:730013483269:android:d6c49e2a68f8e84798f76c",
+            "ios": "1:730013483269:ios:0569c3cbef018f2c98f76c",
+            "web": "1:730013483269:web:fd6dca1e4025fd4f98f76c"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

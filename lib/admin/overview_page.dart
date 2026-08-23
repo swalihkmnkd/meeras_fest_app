@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:meeras_fest_app/admin/providers/curosel_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
 import 'addStudentPage.dart';
 import 'categoryListPage.dart';
+import 'curosel_section.dart';
 import 'providers/dashBordProvider.dart';
 import 'judgesListPage.dart';
 import 'programListPage.dart';
@@ -14,8 +16,11 @@ class OverviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DashboardProvider()..fetchCounts(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DashboardProvider()..fetchCounts()),
+        ChangeNotifierProvider(create: (_) => CarouselProvider()),
+      ],
       child: const _OverviewView(),
     );
   }
@@ -130,6 +135,9 @@ class _OverviewView extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 15),
+              // ---------- Home page carousel manager ----------
+              const CarouselSection(),
               const SizedBox(height: 15),
               Container(
                 width: double.infinity,

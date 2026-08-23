@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.meeras_fest_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -27,7 +27,9 @@ android {
         applicationId = "com.example.meeras_fest_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Pinned to 23 (not flutter.minSdkVersion) because current
+        // firebase_storage / Firebase BoM releases require minSdk 23+.
+        minSdk = maxOf(23, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileProvider extends ChangeNotifier {
   final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS');
+  final _adminsCollection = FirebaseFirestore.instance.collection('Admins');
+  final _judgesCollection = FirebaseFirestore.instance.collection('judges');
 
   static const _kLoggedRole = 'loggedRole';
   static const _kTeamId = 'teamId';
@@ -11,6 +13,7 @@ class ProfileProvider extends ChangeNotifier {
   static const _kTeamLeader = 'teamLeader';
   static const _kTeamCategory = 'teamCategory';
   static const _kUserName = 'userName';
+  static const _kPassword = 'password';
 
   String selectedRole = "User";
   String loggedRole = "Guest";
@@ -24,6 +27,9 @@ class ProfileProvider extends ChangeNotifier {
   String? teamName;
   String? teamLeader;
   String? teamCategory;
+
+  // Admin / Judge session info
+  String? userName;
 
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
@@ -48,10 +54,10 @@ class ProfileProvider extends ChangeNotifier {
       loggedRole = savedRole;
       isLoggedIn = true;
       teamId = prefs.getString(_kTeamId);
-      print(teamId);
       teamName = prefs.getString(_kTeamName);
       teamLeader = prefs.getString(_kTeamLeader);
       teamCategory = prefs.getString(_kTeamCategory);
+      userName = prefs.getString(_kUserName);
     }
 
     isRestoring = false;
@@ -61,17 +67,87 @@ class ProfileProvider extends ChangeNotifier {
   Future<String?> login() async {
     loginError = null;
 
-    if (selectedRole == "Leader") {
-      return _loginAsLeader();
+    switch (selectedRole) {
+      case "Leader":
+        return _loginAsLeader();
+      case "Admin":
+        return _loginWithCollection(
+          collection: _adminsCollection,
+          role: 'Admin',
+        );
+      case "Judge":
+        return _loginWithCollection(
+          collection: _judgesCollection,
+          role: 'Judge',
+        );
+      default:
+      // "User" / other roles: no credential check for now, just mark as logged in.
+        loggedRole = selectedRole;
+        isLoggedIn = true;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_kLoggedRole, selectedRole);
+        notifyListeners();
+        return null;
+    }
+  }
+
+  /// Shared logic for Admin & Judge: match USER_NAME + PASSWORD against
+  /// the given Firestore collection, then persist role + username +
+  /// password to SharedPreferences.
+  Future<String?> _loginWithCollection({
+    required CollectionReference<Map<String, dynamic>> collection,
+    required String role,
+  }) async {
+    final username = emailCtrl.text.trim();
+    final password = passwordCtrl.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      loginError = 'Enter username and password';
+      notifyListeners();
+      return loginError;
     }
 
-    // Other roles: no credential check for now, just mark as logged in.
-    loggedRole = selectedRole;
-    isLoggedIn = true;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLoggedRole, selectedRole);
+    isLoggingIn = true;
     notifyListeners();
-    return null;
+
+    try {
+      final snap = await collection
+          .where('USER_NAME', isEqualTo: username)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isEmpty) {
+        loginError = 'Invalid username or password';
+        return loginError;
+      }
+
+      final data = snap.docs.first.data();
+
+      if ((data['PASSWORD'] ?? '').toString() != password) {
+        loginError = 'Invalid username or password';
+        return loginError;
+      }
+
+      loggedRole = role;
+      isLoggedIn = true;
+      userName = username;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kLoggedRole, role);
+      await prefs.setString(_kUserName, username);
+      await prefs.setString(_kPassword, password);
+
+      emailCtrl.clear();
+      passwordCtrl.clear();
+      loginError = null;
+      return null;
+    } catch (e) {
+      loginError = 'Login failed: $e';
+      return loginError;
+    } finally {
+      isLoggingIn = false;
+      notifyListeners();
+    }
   }
 
   Future<String?> _loginAsLeader() async {
@@ -143,6 +219,7 @@ class ProfileProvider extends ChangeNotifier {
     teamName = null;
     teamLeader = null;
     teamCategory = null;
+    userName = null;
     notifyListeners();
   }
 
