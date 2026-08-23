@@ -37,6 +37,8 @@ class ProgramFormPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProgramProvider>(
       builder: (context, provider, child) {
+        final categoryReady = provider.studentCategory != null;
+
         return Scaffold(
           backgroundColor: const Color(0xFFF3F4F6),
           appBar: AppBar(
@@ -60,17 +62,72 @@ class ProgramFormPage extends StatelessWidget {
                   AdminDropdownField(
                     label: 'Team Category',
                     icon: Icons.groups_rounded,
-                    value: provider.studentCategory,
+                    value: const ['Boys', 'Girls', 'Mixed'].contains(provider.studentCategory)
+                        ? provider.studentCategory
+                        : null,
                     items: const ['Boys', 'Girls', 'Mixed'],
                     onChanged: (v) => provider.setStudentCategory(v!),
                   ),
                   const SizedBox(height: 14),
+
+                  // ── Program Category: now Firebase-driven, filtered by Team Category ──
                   AdminDropdownField(
                     label: 'Program Category',
                     icon: Icons.theater_comedy_rounded,
-                    value: provider.programCategory,
-                    items: const ['Stage', 'Non Stage', 'General'],
-                    onChanged: (v) => provider.setProgramCategory(v!),
+                    // ✅ never pass a value the dropdown doesn't recognize —
+                    // that's what triggers the DropdownButtonFormField assertion crash
+                    value: provider.programCategoryOptions.contains(provider.programCategory)
+                        ? provider.programCategory
+                        : null,
+                    items: provider.programCategoryOptions,
+                    onChanged: (v) {
+                      if (!categoryReady || provider.programCategoryOptions.isEmpty) return;
+                      if (v != null) provider.setProgramCategory(v);
+                    },
+                  ),
+                  if (!categoryReady)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, left: 4),
+                      child: Text(
+                        'Select a Team Category first',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                      ),
+                    )
+                  else if (provider.isLoadingCategories)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, left: 4),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Loading categories...', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                        ],
+                      ),
+                    )
+                  else if (provider.programCategoryOptions.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 6, left: 4),
+                        child: Text(
+                          'No categories found for this Team Category',
+                          style: TextStyle(fontSize: 12, color: Colors.redAccent),
+                        ),
+                      ),
+
+                  const SizedBox(height: 14),
+                  AdminDropdownField(
+                    label: 'Stage / Non Stage',
+                    icon: Icons.stairs_rounded,
+                    value: const ['Stage', 'Non Stage'].contains(provider.stageType)
+                        ? provider.stageType
+                        : null,
+                    items: const ['Stage', 'Non Stage'],
+                    onChanged: (v) {
+                      if (v != null) provider.setStageType(v);
+                    },
                   ),
                   const SizedBox(height: 14),
                   AdminFormField(

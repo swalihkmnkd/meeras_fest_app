@@ -5,6 +5,8 @@ import 'package:meeras_fest_app/home/home_provider.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:provider/provider.dart';
 
+import '../registration/register_provider.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -155,6 +157,7 @@ class HomeScreen extends StatelessWidget {
                           return InkWell(
                             onTap: (){
                               profilePro.logout();
+                              context.read<RegistrationProvider>().clearRegistrationSelections();
                             },
                             child: Container(
                               height: 90,

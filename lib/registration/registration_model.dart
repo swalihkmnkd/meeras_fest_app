@@ -8,8 +8,11 @@ class RegistrationModel {
   final String programId;
   final String programName;
   final String studentCategory;
-  final String programCategory; // Stage / Non Stage / General
+  final String programCategory; // the actual category name, e.g. "Senior" (from CATEGORIES.NAME)
+  final String stageType; // "Stage" / "Non Stage"
   final Timestamp? createdAt;
+  final String registrationId;
+  final String registrationNumber;
 
   RegistrationModel({
     required this.id,
@@ -20,7 +23,10 @@ class RegistrationModel {
     required this.programName,
     required this.studentCategory,
     required this.programCategory,
+    required this.stageType,
     this.createdAt,
+    required this.registrationId,
+    required this.registrationNumber,
   });
 
   Map<String, dynamic> toMap() => {
@@ -31,7 +37,10 @@ class RegistrationModel {
     'PROGRAM_NAME': programName,
     'STUDENT_CATEGORY': studentCategory,
     'PROGRAM_CATEGORY': programCategory,
+    'STAGE_TYPE': stageType,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
+    'REGISTRATION_ID': registrationId ,
+    'REGISTER_NUMBER': registrationNumber,
   };
 
   factory RegistrationModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -45,6 +54,12 @@ class RegistrationModel {
       programName: data['PROGRAM_NAME'] ?? '',
       studentCategory: data['STUDENT_CATEGORY'] ?? '',
       programCategory: data['PROGRAM_CATEGORY'] ?? '',
+      registrationId: data['REGISTRATION_ID'] ?? '',
+      registrationNumber: data['REGISTER_NUMBER'] ?? '',
+      // ⚠️ Registrations created before this field existed won't have it —
+      // they'll come back as '' here, which just means they won't match
+      // any Stage/Non Stage filter. That's expected for legacy data.
+      stageType: data['STAGE_TYPE'] ?? '',
       createdAt: data['createdAt'],
     );
   }

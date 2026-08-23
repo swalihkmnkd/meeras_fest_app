@@ -6,34 +6,27 @@ import 'package:provider/provider.dart';
 import '../admin/models/categoryModel.dart';
 import '../admin/models/programModel.dart';
 import '../admin/models/studentModel.dart';
-import '../admin/providers/categoryProvider.dart';
-
-
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
-  static Color _categoryColor(String category) {
-    switch (category) {
+  static Color _stageColor(String stageType) {
+    switch (stageType) {
       case 'Stage':
         return Colors.orange.shade50;
       case 'Non Stage':
         return Colors.blue.shade50;
-      case 'General':
-        return Colors.green.shade50;
       default:
         return Colors.grey.shade50;
     }
   }
 
-  static Color _categoryTextColor(String category) {
-    switch (category) {
+  static Color _stageTextColor(String stageType) {
+    switch (stageType) {
       case 'Stage':
         return Colors.orange.shade800;
       case 'Non Stage':
         return Colors.blue.shade800;
-      case 'General':
-        return Colors.green.shade800;
       default:
         return Colors.black87;
     }
@@ -42,8 +35,11 @@ class RegisterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teamId = context.watch<ProfileProvider>().teamId;
+    // NOTE: adjust `teamCategory` below if your ProfileProvider names the
+    // team's own Boy/Girl/Mixed field differently.
+    final teamCategory = context.watch<ProfileProvider>().teamCategory;
     if (teamId != null) {
-      context.read<RegistrationProvider>().loadForTeam(teamId);
+      context.read<RegistrationProvider>().loadForTeam(teamId, teamCategory);
     }
 
     return Scaffold(
@@ -120,20 +116,25 @@ class RegisterScreen extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        Text(item.programName,
-                                            style: const TextStyle(fontSize: 12, color: Color(0xff6B7280))),
+                                        Expanded(
+                                          child: Text(
+                                            '${item.programName} · ${item.programCategory}',
+                                            style: const TextStyle(fontSize: 12, color: Color(0xff6B7280)),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
                                         const SizedBox(width: 8),
                                         Container(
                                           padding:
                                           const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: _categoryColor(item.programCategory),
+                                            color: _stageColor(item.stageType),
                                             borderRadius: BorderRadius.circular(20),
                                           ),
-                                          child: Text(item.programCategory,
+                                          child: Text(item.stageType,
                                               style: TextStyle(
                                                   fontSize: 12,
-                                                  color: _categoryTextColor(item.programCategory))),
+                                                  color: _stageTextColor(item.stageType))),
                                         ),
                                       ],
                                     ),
@@ -170,9 +171,14 @@ class RegisterScreen extends StatelessWidget {
                             ? null
                             : () async {
                           final error = await provider.submitAll();
+
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(error ?? 'Registrations submitted')),
+                              SnackBar(
+                                content: Text(
+                                  error ?? 'Registrations submitted',
+                                ),
+                              ),
                             );
                           }
                         },
@@ -209,6 +215,7 @@ class _RegistrationForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -222,12 +229,13 @@ class _RegistrationForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // ---- Category (filtered to this team's Boy/Girl/Mixed category) ----
           const _FieldLabel('Category'),
           const SizedBox(height: 8),
-          if (provider.categories.isEmpty)
+          if (provider.categoriesForTeam.isEmpty)
             _BoxWrapper(
-              child: Text('No categories found',
-                  style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12)),
+              child: const Text('No categories found for your team',
+                  style: TextStyle(color: Color(0xFFEF4444), fontSize: 12)),
             )
           else
             _BoxWrapper(
@@ -241,7 +249,7 @@ class _RegistrationForm extends StatelessWidget {
                     hint: const Text('Select category',
                         style: TextStyle(color: Color(0xff9CA3AF), fontSize: 12)),
                     icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    items: provider.categories
+                    items: provider.categoriesForTeam
                         .map((c) => DropdownMenuItem(value: c, child: Text(c.name, style: const TextStyle(fontSize: 12))))
                         .toList(),
                     onChanged: provider.setCategory,
@@ -252,6 +260,34 @@ class _RegistrationForm extends StatelessWidget {
 
           const SizedBox(height: 20),
 
+          // ---- Stage / Non Stage ----
+          const _FieldLabel('Stage / Non Stage'),
+          const SizedBox(height: 8),
+          _BoxWrapper(
+            child: DropdownButtonHideUnderline(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: DropdownButton<String>(
+                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                  value: provider.selectedStageType,
+                  isExpanded: true,
+                  hint: Text(
+                    provider.selectedCategory == null ? 'Select category first' : 'Select Stage / Non Stage',
+                    style: const TextStyle(color: Color(0xff9CA3AF), fontSize: 12),
+                  ),
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                  items: provider.stageTypeOptions
+                      .map((st) => DropdownMenuItem(value: st, child: Text(st, style: const TextStyle(fontSize: 12))))
+                      .toList(),
+                  onChanged: provider.selectedCategory == null ? null : provider.setStageType,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ---- Program ----
           const _FieldLabel('Program'),
           const SizedBox(height: 8),
           _BoxWrapper(
@@ -263,7 +299,7 @@ class _RegistrationForm extends StatelessWidget {
                   value: provider.selectedProgram,
                   isExpanded: true,
                   hint: Text(
-                    provider.selectedCategory == null ? 'Select category first' : 'Select program',
+                    provider.selectedStageType == null ? 'Select Stage / Non Stage first' : 'Select program',
                     style: const TextStyle(color: Color(0xff9CA3AF), fontSize: 12),
                   ),
                   icon: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -276,7 +312,7 @@ class _RegistrationForm extends StatelessWidget {
                     ),
                   ))
                       .toList(),
-                  onChanged: provider.selectedCategory == null ? null : provider.setProgram,
+                  onChanged: provider.selectedStageType == null ? null : provider.setProgram,
                 ),
               ),
             ),
@@ -284,12 +320,13 @@ class _RegistrationForm extends StatelessWidget {
 
           const SizedBox(height: 20),
 
+          // ---- Students ----
           const _FieldLabel('Students'),
           const SizedBox(height: 8),
           if (provider.selectedProgram == null)
             _BoxWrapper(
-              child: Text('Select a program first',
-                  style: const TextStyle(color: Color(0xff9CA3AF), fontSize: 12)),
+              child: const Text('Select a program first',
+                  style: TextStyle(color: Color(0xff9CA3AF), fontSize: 12)),
             )
           else
             _StudentChecklist(provider: provider),
@@ -323,6 +360,8 @@ class _RegistrationForm extends StatelessWidget {
 }
 
 /// Multi-select list of students eligible for the currently selected program.
+/// Selection is capped at the program's remaining participant count — once
+/// reached, unselected checkboxes disable themselves.
 class _StudentChecklist extends StatelessWidget {
   final RegistrationProvider provider;
   const _StudentChecklist({required this.provider});
@@ -330,13 +369,16 @@ class _StudentChecklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final students = provider.eligibleStudents;
+    final program = provider.selectedProgram;
 
     if (students.isEmpty) {
       return _BoxWrapper(
-        child: Text('No eligible students for this program',
-            style: const TextStyle(color: Color(0xff9CA3AF), fontSize: 12)),
+        child: const Text('No eligible students for this program',
+            style: TextStyle(color: Color(0xff9CA3AF), fontSize: 12)),
       );
     }
+
+    final remaining = program != null ? provider.remainingSlots(program) : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -345,39 +387,66 @@ class _StudentChecklist extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE4E4EA)),
       ),
       child: Column(
-        children: students.map((StudentModel s) {
-          final selected = provider.selectedStudentIds.contains(s.id);
-          return InkWell(
-            onTap: () => provider.toggleStudentSelection(s.id),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: s == students.last ? Colors.transparent : const Color(0xFFE4E4EA),
-                  ),
+        children: [
+          if (program != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${provider.selectedStudentIds.length}/$remaining slot(s) selected',
+                  style: const TextStyle(fontSize: 11, color: Color(0xff9CA3AF)),
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    selected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                    color: selected ? const Color(0xFF1A1A2E) : const Color(0xff9CA3AF),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(s.name,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                            color: const Color(0xFF1F2937))),
-                  ),
-                ],
-              ),
             ),
-          );
-        }).toList(),
+          ...students.map((StudentModel s) {
+            final selected = provider.selectedStudentIds.contains(s.id);
+            final atLimit = !selected && provider.selectedStudentIds.length >= remaining;
+            return InkWell(
+              onTap: atLimit
+                  ? null
+                  : () {
+                final ok = provider.toggleStudentSelection(s.id);
+                if (!ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No more slots left in this program')),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: s == students.last ? Colors.transparent : const Color(0xFFE4E4EA),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      color: selected
+                          ? const Color(0xFF1A1A2E)
+                          : atLimit
+                          ? const Color(0xffE5E7EB)
+                          : const Color(0xff9CA3AF),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(s.name,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                              color: atLimit ? const Color(0xff9CA3AF) : const Color(0xFF1F2937))),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

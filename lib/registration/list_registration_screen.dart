@@ -219,7 +219,7 @@ class ListRegistrationScreen extends StatelessWidget {
                                           const Text("Registration ID",
                                               style: TextStyle(fontSize: 12, color: Colors.grey)),
                                           const SizedBox(height: 4),
-                                          Text(item.id, style: const TextStyle(fontSize: 12)),
+                                          Text(item.registrationNumber, style: const TextStyle(fontSize: 12)),
                                         ],
                                       ),
                                     ),

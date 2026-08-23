@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../models/programModel.dart';
 
+/// ── Adjust these to match your actual Firestore schema for categories ──
+const String kCategoriesCollection = 'CATEGORIES';
+const String kCategoryNameField = 'NAME';
+const String kCategoryTeamCategoryField = 'GENDER'; // matches studentCategory (Boys/Girls/Mixed)
+
 class ProgramProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('PROGRAMS');
 
@@ -23,9 +28,14 @@ class ProgramProvider extends ChangeNotifier {
   final TextEditingController bGradePointCtrl = TextEditingController();
   final TextEditingController cGradePointCtrl = TextEditingController();
   final TextEditingController totalParticipantsCtrl = TextEditingController();
-  String? studentCategory;
+  String? studentCategory; // acts as "Team Category" / "Gender"
   String? programCategory;
+  String? stageType; // "Stage" or "Non Stage"
   String? _editingId;
+
+  // ── New: Firebase-driven Program Category options ──
+  List<String> programCategoryOptions = [];
+  bool isLoadingCategories = false;
 
   bool get isEditing => _editingId != null;
 
@@ -48,6 +58,47 @@ class ProgramProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetches Program Category options from Firebase filtered by the
+  /// currently selected Team Category (studentCategory). If the current
+  /// programCategory value isn't among the fetched options (e.g. stale
+  /// data from before this field's format changed), it's cleared —
+  /// keeping an invalid value crashes DropdownButtonFormField.
+  Future<void> _loadCategoryOptions() async {
+    if (studentCategory == null) {
+      programCategoryOptions = [];
+      programCategory = null;
+      notifyListeners();
+      return;
+    }
+
+    isLoadingCategories = true;
+    notifyListeners();
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection(kCategoriesCollection)
+          .where(kCategoryTeamCategoryField, isEqualTo: studentCategory)
+          .get();
+
+      programCategoryOptions = snap.docs
+          .map((d) => (d.data()[kCategoryNameField] ?? '').toString())
+          .where((name) => name.isNotEmpty)
+          .toList();
+
+      // ✅ Always clear an invalid/stale selection — keeping a value that
+      // isn't in the fetched options crashes DropdownButtonFormField.
+      if (!programCategoryOptions.contains(programCategory)) {
+        programCategory = null;
+      }
+    } catch (e) {
+      errorMessage = 'Failed to load categories: $e';
+      programCategoryOptions = [];
+    } finally {
+      isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
   void startCreate() {
     _editingId = null;
     nameCtrl.clear();
@@ -63,6 +114,8 @@ class ProgramProvider extends ChangeNotifier {
     totalParticipantsCtrl.clear();
     studentCategory = null;
     programCategory = null;
+    programCategoryOptions = [];
+    stageType = null;
     notifyListeners();
   }
 
@@ -80,17 +133,31 @@ class ProgramProvider extends ChangeNotifier {
     cGradePointCtrl.text = program.cGradePoint.toStringAsFixed(0);
     totalParticipantsCtrl.text = program.totalParticipants.toString();
     studentCategory = program.studentCategory;
-    programCategory = program.programCategory;
+    programCategory = program.programCategory; // tentative until options load
+    // ⚠️ TODO: ProgramModel has no stageType field yet, so it can't be
+    // restored here. Add `final String stageType;` to ProgramModel
+    // (+ fromDoc/toMap) to make editing round-trip this value.
+    stageType = program.stageType;
     notifyListeners();
+
+    // ✅ fetch matching categories; stale/mismatched selections get cleared
+    _loadCategoryOptions();
   }
 
   void setStudentCategory(String value) {
     studentCategory = value;
+    programCategory = null; // reset — must re-select from filtered options
     notifyListeners();
+    _loadCategoryOptions(); // ✅ fetch categories matching the new Team Category
   }
 
   void setProgramCategory(String value) {
     programCategory = value;
+    notifyListeners();
+  }
+
+  void setStageType(String value) {
+    stageType = value;
     notifyListeners();
   }
 
@@ -114,8 +181,9 @@ class ProgramProvider extends ChangeNotifier {
 
   Future<String?> save() async {
     if (nameCtrl.text.trim().isEmpty) return 'Program name is required';
-    if (studentCategory == null) return 'Please select a student category';
-    if (programCategory == null) return 'Please select a program category';
+    if (studentCategory == null) return 'Please select a Team Category';
+    if (programCategory == null) return 'Please select a Category';
+    if (stageType == null) return 'Please select Stage / Non Stage';
 
     final first = _parseUnder100(firstScoreCtrl.text);
     final second = _parseUnder100(secondScoreCtrl.text);
@@ -160,12 +228,18 @@ class ProgramProvider extends ChangeNotifier {
         studentCategory: studentCategory!,
         programCategory: programCategory!,
         totalParticipants: totalParticipants,
+        stageType: stageType,
       );
 
+      // ⚠️ stageType is merged in manually since ProgramModel doesn't
+      // define it yet — once you add it to the model, this can just
+      // become part of model.toMap() instead.
+      final data = model.toMap();
+
       if (_editingId == null) {
-        await _collection.add(model.toMap());
+        await _collection.add(data);
       } else {
-        await _collection.doc(_editingId).update(model.toMap());
+        await _collection.doc(_editingId).update(data);
       }
       await fetchPrograms();
       return null;

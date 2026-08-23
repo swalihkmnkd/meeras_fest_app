@@ -346,6 +346,7 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
   late String _teamId;
   late String _teamName;
   late String _teamColor;
+  late String _registrationNumber;
 
   // The exact strings used by the dropdown items below. Firestore data may
   // have been written with different casing (e.g. "FEMALE", "female"), and
@@ -381,6 +382,7 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
     _teamId=s?.teamId??'';
     _teamName=s?.teamName??'';
     _teamColor=s?.teamColor??'';
+    _registrationNumber=s?.registerNumber??'';
   }
 
   @override
@@ -402,6 +404,7 @@ class _IndividualStudentFormState extends State<_IndividualStudentForm> {
       division: _divisionCt.text.trim(),
       gender: _gender,
       rollNumber: _rollCt.text.trim(), teamId: _teamId, teamName:_teamName, teamColor: _teamColor,
+      registerNumber: _registrationNumber,
     );
 
     // Capture the Navigator BEFORE any pop happens below. In edit mode this

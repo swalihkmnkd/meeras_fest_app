@@ -15,7 +15,6 @@ class TeamProvider extends ChangeNotifier {
 
   // ---- Form state (used by TeamsFormPage) ----
   final TextEditingController nameCtrl = TextEditingController();
-  final TextEditingController teamIdCtrl = TextEditingController();
   final TextEditingController leaderCtrl = TextEditingController();
   final TextEditingController assistantLeaderCtrl = TextEditingController();
   final TextEditingController userNameCtrl = TextEditingController();
@@ -45,7 +44,6 @@ class TeamProvider extends ChangeNotifier {
   void startCreate() {
     _editingId = null;
     nameCtrl.clear();
-    teamIdCtrl.clear();
     leaderCtrl.clear();
     assistantLeaderCtrl.clear();
     userNameCtrl.clear();
@@ -58,7 +56,6 @@ class TeamProvider extends ChangeNotifier {
   void startEdit(TeamModel team) {
     _editingId = team.id;
     nameCtrl.text = team.name;
-    teamIdCtrl.text = team.teamId;
     leaderCtrl.text = team.leaderName;
     assistantLeaderCtrl.text = team.assistantLeader;
     userNameCtrl.text = team.userName;
@@ -80,7 +77,6 @@ class TeamProvider extends ChangeNotifier {
 
   Future<String?> save() async {
     if (nameCtrl.text.trim().isEmpty) return 'Team name is required';
-    if (teamIdCtrl.text.trim().isEmpty) return 'Team ID is required';
     if (leaderCtrl.text.trim().isEmpty) return 'Team leader name is required';
     if (color == null) return 'Please select a team color';
     if (category == null) return 'Please select a team category';
@@ -93,7 +89,7 @@ class TeamProvider extends ChangeNotifier {
       final model = TeamModel(
         id: _editingId ?? '',
         name: nameCtrl.text.trim(),
-        teamId: teamIdCtrl.text.trim(),
+        teamId: _editingId??'',
         leaderName: leaderCtrl.text.trim(),
         assistantLeader: assistantLeaderCtrl.text.trim(),
         category: category!,
@@ -105,8 +101,15 @@ class TeamProvider extends ChangeNotifier {
       final data = model.toMap();
       if (_editingId == null) {
         data['createdAt'] = FieldValue.serverTimestamp();
+
         final doc = await _collection.add(data);
+
         _editingId = doc.id;
+
+        // Update the newly created document with its own ID
+        await _collection.doc(doc.id).update({
+          'TEAM_ID': doc.id,
+        });
       } else {
         await _collection.doc(_editingId).update(data);
       }
@@ -131,7 +134,6 @@ class TeamProvider extends ChangeNotifier {
   @override
   void dispose() {
     nameCtrl.dispose();
-    teamIdCtrl.dispose();
     leaderCtrl.dispose();
     assistantLeaderCtrl.dispose();
     userNameCtrl.dispose();

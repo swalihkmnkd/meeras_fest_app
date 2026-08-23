@@ -14,6 +14,7 @@ class ProgramModel {
   final double cGradePoint;
   final String studentCategory; // Boys / Girls / Mixed
   final String programCategory; // Stage / Non Stage / General
+  final String? stageType; // Stage / Non Stage
   final int totalParticipants;
   final Timestamp? createdAt;
 
@@ -32,6 +33,7 @@ class ProgramModel {
     required this.studentCategory,
     required this.programCategory,
     required this.totalParticipants,
+    this.stageType,
     this.createdAt,
   });
 
@@ -48,6 +50,7 @@ class ProgramModel {
     'C_GRADE_POINT': cGradePoint,
     'STUDENT_CATEGORY': studentCategory,
     'PROGRAM_CATEGORY': programCategory,
+    'STAGE_TYPE': stageType,
     'TOTAL_PARTICIPANTS': totalParticipants,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
   };
@@ -72,6 +75,7 @@ class ProgramModel {
       cGradePoint: num_(data['C_GRADE_POINT']),
       studentCategory: data['STUDENT_CATEGORY'] ?? 'Mixed',
       programCategory: data['PROGRAM_CATEGORY'] ?? 'Stage',
+      stageType: data['STAGE_TYPE'] as String?,
       totalParticipants: int_(data['TOTAL_PARTICIPANTS']),
       createdAt: data['createdAt'],
     );

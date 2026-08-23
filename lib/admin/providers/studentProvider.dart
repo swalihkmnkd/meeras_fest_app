@@ -134,7 +134,7 @@ class StudentProvider extends ChangeNotifier {
           studentClass: studentClass,
           division: division,
           gender: gender,
-          rollNumber: rollNumber, teamId: '', teamName: '', teamColor: '',
+          rollNumber: rollNumber, teamId: '', teamName: '', teamColor: '',registerNumber: '',
         ));
       }
 

@@ -10,6 +10,7 @@ class StudentModel {
   final String teamId;
   final String teamName;
   final String teamColor;
+  final String? registerNumber;
 
   StudentModel({
     this.id = '',
@@ -21,6 +22,7 @@ class StudentModel {
     required this.teamId,
     required this.teamName,
     required this.teamColor,
+    required this.registerNumber,
   });
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +34,7 @@ class StudentModel {
     'TEAM_ID': teamId,
     'TEAM_NAME': teamName,
     'TEAM_COLOR': teamColor,
+    'REGISTER_NUMBER': registerNumber,
   };
 
   bool get isAssigned => teamId.isNotEmpty;
@@ -48,6 +51,7 @@ class StudentModel {
       teamId: map['TEAM_ID']?.toString() ?? '',
       teamName: map['TEAM_NAME']?.toString() ?? '',
       teamColor: map['TEAM_COLOR']?.toString() ?? '',
+      registerNumber: map['REGISTER_NUMBER']?.toString(),
     );
   }
 
@@ -61,6 +65,7 @@ class StudentModel {
     teamId: map['TEAM_ID']?.toString() ?? '',
     teamName: map['TEAM_NAME']?.toString() ?? '',
     teamColor: map['TEAM_COLOR']?.toString() ?? '',
+    registerNumber: map['REGISTER_NUMBER']?.toString(),
   );
 
   StudentModel copyWith({
@@ -73,6 +78,7 @@ class StudentModel {
     String? teamId,
     String? teamName,
     String? teamColor,
+    String? registerNumber,
   }) {
     return StudentModel(
       id: id ?? this.id,
@@ -84,6 +90,7 @@ class StudentModel {
       teamId: teamId ?? this.teamId,
       teamName: teamName ?? this.teamName,
       teamColor: teamColor ?? this.teamColor,
+      registerNumber: registerNumber??this.registerNumber,
     );
   }
 }

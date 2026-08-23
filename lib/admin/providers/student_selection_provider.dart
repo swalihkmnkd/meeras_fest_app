@@ -80,34 +80,126 @@ class StudentSelectionProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+  Future<int?> _getTeamNumber() async {
+    if (teamId.isEmpty) return null;
 
+    final snapshot = await FirebaseFirestore.instance
+        .collection('TEAMS')
+        .orderBy('createdAt')
+        .get();
+
+    for (int i = 0; i < snapshot.docs.length; i++) {
+      if (snapshot.docs[i].id == teamId) {
+        return i + 1;
+      }
+    }
+
+    return null;
+  }
   Future<String?> saveAssignments() async {
     isSaving = true;
     notifyListeners();
+
     try {
       final batch = FirebaseFirestore.instance.batch();
-      final originallyAssigned =
-      students.where((s) => s.teamId == teamId).map((s) => s.id).toSet();
 
-      // Newly selected -> assign team info.
-      for (final id in selectedIds.difference(originallyAssigned)) {
-        batch.update(_collection.doc(id), {
-          'TEAM_ID': teamId,
-          'TEAM_NAME': teamName,
-          'TEAM_COLOR': teamColor,
-        });
+      final originallyAssigned = students
+          .where((s) => s.teamId == teamId)
+          .map((s) => s.id)
+          .toSet();
+
+      // Students being removed from this team.
+      final removedIds = originallyAssigned
+          .difference(selectedIds);
+
+      // Students newly selected.
+      final newlySelectedIds = selectedIds
+          .difference(originallyAssigned);
+
+      // ------------------------------------------------------------
+      // 1. Get currently used REGISTER_NUMBER values for this team
+      // ------------------------------------------------------------
+
+      final teamStudentsSnapshot = await _collection
+          .where('TEAM_ID', isEqualTo: teamId)
+          .get();
+
+      final usedNumbers = <int>{};
+
+      for (final doc in teamStudentsSnapshot.docs) {
+        final value = doc.data()['REGISTER_NUMBER'];
+
+        final number = int.tryParse(value?.toString() ?? '');
+
+        if (number != null) {
+          usedNumbers.add(number);
+        }
       }
 
-      // Deselected -> clear team info.
-      for (final id in originallyAssigned.difference(selectedIds)) {
+      // ------------------------------------------------------------
+      // 2. Find team number
+      // ------------------------------------------------------------
+
+      final teamNumber = await _getTeamNumber();
+
+      if (teamNumber == null) {
+        return 'Team not found';
+      }
+
+      // Team 1 -> 100-199
+      // Team 2 -> 200-299
+      // Team 3 -> 300-399
+
+      final startNumber = teamNumber * 100;
+      final endNumber = startNumber + 99;
+
+      // ------------------------------------------------------------
+      // 3. Removed students
+      // ------------------------------------------------------------
+
+      for (final id in removedIds) {
         batch.update(_collection.doc(id), {
           'TEAM_ID': '',
           'TEAM_NAME': '',
           'TEAM_COLOR': '',
+          'REGISTER_NUMBER': '',
+        });
+      }
+
+      // ------------------------------------------------------------
+      // 4. Newly selected students
+      // ------------------------------------------------------------
+
+      for (final id in newlySelectedIds) {
+        // Find first missing number.
+        int? registerNumber;
+
+        for (int number = startNumber;
+        number <= endNumber;
+        number++) {
+          if (!usedNumbers.contains(number)) {
+            registerNumber = number;
+            break;
+          }
+        }
+
+        if (registerNumber == null) {
+          return 'No registration number available for this team';
+        }
+
+        // Reserve this number for the current batch.
+        usedNumbers.add(registerNumber);
+
+        batch.update(_collection.doc(id), {
+          'TEAM_ID': teamId,
+          'TEAM_NAME': teamName,
+          'TEAM_COLOR': teamColor,
+          'REGISTER_NUMBER': registerNumber,
         });
       }
 
       await batch.commit();
+
       return null;
     } catch (e) {
       return 'Failed to save students: $e';

@@ -55,8 +55,6 @@ class _TeamsFormPageState extends State<TeamsFormPage> {
                 children: [
                   AdminFormField(controller: provider.nameCtrl, label: 'Team Name', icon: Icons.groups_rounded),
                   const SizedBox(height: 14),
-                  AdminFormField(controller: provider.teamIdCtrl, label: 'Team ID', icon: Icons.badge_rounded),
-                  const SizedBox(height: 14),
                   AdminFormField(controller: provider.leaderCtrl, label: 'Team Leader', icon: Icons.star_rounded),
                   const SizedBox(height: 14),
                   AdminFormField(controller: provider.assistantLeaderCtrl, label: 'Assistant Leader', icon: Icons.star_half_rounded),
