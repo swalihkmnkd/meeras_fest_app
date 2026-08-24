@@ -141,7 +141,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
-                      child: Text(
+                      child: SelectableText(
                         resultPro.errorMessage!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Color(0xff6B7280)),
