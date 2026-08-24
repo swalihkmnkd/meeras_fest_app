@@ -37,6 +37,7 @@ class AdminFormField extends StatelessWidget {
   final IconData icon;
   final TextInputType keyboardType;
   final int maxLines;
+  final bool obscureText;
 
   const AdminFormField({
     super.key,
@@ -45,6 +46,7 @@ class AdminFormField extends StatelessWidget {
     required this.icon,
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
+    this.obscureText = false,
   });
 
   @override
@@ -52,7 +54,8 @@ class AdminFormField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      maxLines: maxLines,
+      maxLines: obscureText ? 1 : maxLines, // obscured fields must be single-line
+      obscureText: obscureText,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF6366F1)),
@@ -290,14 +293,18 @@ class _AdminActionCardState extends State<AdminActionCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        transform: Matrix4.identity()..translate(0.0, _pressed ? 3.0 : 0.0),
-        padding: const EdgeInsets.all(16),
+        transform: Matrix4.identity()
+          ..translate(0.0, _pressed ? 3.0 : 0.0),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [widget.color.withOpacity(0.95), widget.color.withOpacity(0.75)],
+            colors: [
+              widget.color.withOpacity(0.95),
+              widget.color.withOpacity(0.75),
+            ],
           ),
           boxShadow: _pressed
               ? [
@@ -313,7 +320,11 @@ class _AdminActionCardState extends State<AdminActionCard> {
               blurRadius: 14,
               offset: const Offset(0, 8),
             ),
-            const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            const BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
           ],
         ),
         child: Column(
@@ -326,21 +337,52 @@ class _AdminActionCardState extends State<AdminActionCard> {
                 color: Colors.white.withOpacity(0.22),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(widget.icon, color: Colors.white, size: 24),
+              child: Icon(
+                widget.icon,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-            const SizedBox(height: 14),
+
+            const SizedBox(height: 6),
+
+            // Title
             Text(
               widget.title,
-              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-            ), const SizedBox(height: 14),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // Count
             Text(
               widget.count,
-              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+
             const SizedBox(height: 2),
+
+            // Subtitle
             Text(
               widget.subtitle,
-              style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 11,
+              ),
             ),
           ],
         ),

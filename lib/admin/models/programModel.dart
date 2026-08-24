@@ -17,6 +17,11 @@ class ProgramModel {
   final String? stageType; // Stage / Non Stage
   final int totalParticipants;
   final Timestamp? createdAt;
+  // Assignment state. Not written by ProgramModel.toMap() — these are only
+  // ever changed by JudgeProvider.assignProgram/unassignProgram, so normal
+  // program-editing saves never touch them.
+  final String status; // '' or 'ASSIGNED'
+  final String assignedTo; // judge doc id, or ''
 
   ProgramModel({
     required this.id,
@@ -35,7 +40,11 @@ class ProgramModel {
     required this.totalParticipants,
     this.stageType,
     this.createdAt,
+    this.status = '',
+    this.assignedTo = '',
   });
+
+  bool get isAssigned => assignedTo.isNotEmpty;
 
   Map<String, dynamic> toMap() => {
     'PROGRAM_NAME': programName,
@@ -78,6 +87,8 @@ class ProgramModel {
       stageType: data['STAGE_TYPE'] as String?,
       totalParticipants: int_(data['TOTAL_PARTICIPANTS']),
       createdAt: data['createdAt'],
+      status: (data['STATUS'] ?? '').toString(),
+      assignedTo: (data['ASSIGNED_TO'] ?? '').toString(),
     );
   }
 

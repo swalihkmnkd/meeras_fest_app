@@ -14,6 +14,7 @@ class ProfileProvider extends ChangeNotifier {
   static const _kTeamCategory = 'teamCategory';
   static const _kUserName = 'userName';
   static const _kPassword = 'password';
+  static const _kEntityId = 'judgesId';
 
   String selectedRole = "User";
   String loggedRole = "Guest";
@@ -30,6 +31,7 @@ class ProfileProvider extends ChangeNotifier {
 
   // Admin / Judge session info
   String? userName;
+  String? entityId;
 
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
@@ -121,7 +123,8 @@ class ProfileProvider extends ChangeNotifier {
         return loginError;
       }
 
-      final data = snap.docs.first.data();
+      final doc = snap.docs.first;
+      final data = doc.data();
 
       if ((data['PASSWORD'] ?? '').toString() != password) {
         loginError = 'Invalid username or password';
@@ -131,11 +134,13 @@ class ProfileProvider extends ChangeNotifier {
       loggedRole = role;
       isLoggedIn = true;
       userName = username;
+      entityId = doc.id; // the judge's / admin's own Firestore doc id
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kLoggedRole, role);
       await prefs.setString(_kUserName, username);
       await prefs.setString(_kPassword, password);
+      await prefs.setString(_kEntityId, doc.id);
 
       emailCtrl.clear();
       passwordCtrl.clear();

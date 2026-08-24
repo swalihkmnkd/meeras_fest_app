@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'adminScreen.dart';
 import 'adminWidgets.dart';
+import 'assign_program_to_judge_screen.dart';
 
 class AddJudgesPage extends StatefulWidget {
   const AddJudgesPage({super.key});
@@ -14,7 +15,8 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _categoryCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
   bool _saving = false;
 
   @override
@@ -22,7 +24,8 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
-    _categoryCtrl.dispose();
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -32,22 +35,49 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
           .showSnackBar(const SnackBar(content: Text('Judge name is required')));
       return;
     }
+    if (_usernameCtrl.text.trim().isEmpty || _passwordCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Username and password are required')));
+      return;
+    }
+
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance.collection('judges').add({
-        'name': _nameCtrl.text.trim(),
-        'phone': _phoneCtrl.text.trim(),
-        'email': _emailCtrl.text.trim(),
-        'assignedCategory': _categoryCtrl.text.trim(),
+      // Lowercase 'judges' — matches the actual collection name in Firestore
+      // and the ProfileProvider Judge-login query.
+      final docRef = await FirebaseFirestore.instance.collection('judges').add({
+        'NAME': _nameCtrl.text.trim(),
+        'PHONE': _phoneCtrl.text.trim(),
+        'EMAIL': _emailCtrl.text.trim(),
+        'USER_NAME': _usernameCtrl.text.trim(),
+        'PASSWORD': _passwordCtrl.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
       });
+
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Judge added successfully')));
+
+      final judgeId = docRef.id;
+      final judgeName = _nameCtrl.text.trim();
+
       _nameCtrl.clear();
       _phoneCtrl.clear();
       _emailCtrl.clear();
-      _categoryCtrl.clear();
+      _usernameCtrl.clear();
+      _passwordCtrl.clear();
+
+      if (!mounted) return;
+      // Jump straight into assigning programs to the judge just created.
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AssignProgramsToJudgePage(
+            judgeId: judgeId,
+            judgeName: judgeName,
+          ),
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Failed to add judge: $e')));
@@ -61,7 +91,7 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
-        title: const Text('Add Judge'),
+        title: const Text('Add Judgesfsdf'),
         backgroundColor: const Color(0xFFEF4444),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -72,7 +102,11 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AdminFormField(controller: _nameCtrl, label: 'Judge Name', icon: Icons.person_rounded),
+              AdminFormField(
+                controller: _nameCtrl,
+                label: 'Judge Name',
+                icon: Icons.person_rounded,
+              ),
               const SizedBox(height: 14),
               AdminFormField(
                 controller: _phoneCtrl,
@@ -89,13 +123,20 @@ class _AddJudgesPageState extends State<AddJudgesPage> {
               ),
               const SizedBox(height: 14),
               AdminFormField(
-                controller: _categoryCtrl,
-                label: 'Assigned Category',
-                icon: Icons.category_rounded,
+                controller: _usernameCtrl,
+                label: 'Username',
+                icon: Icons.account_circle_rounded,
+              ),
+              const SizedBox(height: 14),
+              AdminFormField(
+                controller: _passwordCtrl,
+                label: 'Password',
+                icon: Icons.lock_rounded,
+                obscureText: true,
               ),
               const SizedBox(height: 22),
               AdminSubmitButton(
-                label: 'Save Judge',
+                label: 'Save & Assign Programs',
                 loading: _saving,
                 onPressed: _save,
                 color: const Color(0xFFEF4444),

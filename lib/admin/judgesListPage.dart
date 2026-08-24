@@ -13,7 +13,9 @@ class JudgesListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => JudgeProvider()..fetchJudges(),
+      create: (_) => JudgeProvider()
+        ..fetchJudges()
+        ..fetchProgramsCache(),
       child: const _JudgesListView(),
     );
   }
@@ -39,6 +41,7 @@ class _JudgesListView extends StatelessWidget {
       ),
     );
     provider.fetchJudges();
+    provider.fetchProgramsCache();
   }
 
   Future<void> _delete(BuildContext context, JudgeModel judge) async {
@@ -49,9 +52,8 @@ class _JudgesListView extends StatelessWidget {
     if (!context.mounted) return;
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-    } else {
-      provider.fetchJudges();
     }
+    // deleteJudge already updates local state on success — no refetch needed.
   }
 
   @override
@@ -85,19 +87,25 @@ class _JudgesListView extends StatelessWidget {
             );
           }
           return RefreshIndicator(
-            onRefresh: provider.fetchJudges,
+            onRefresh: () async {
+              await Future.wait([provider.fetchJudges(), provider.fetchProgramsCache()]);
+            },
             child: ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
               itemCount: provider.judges.length,
               itemBuilder: (context, index) {
                 final judge = provider.judges[index];
+                final assignedPrograms = provider.programsForJudge(judge.id);
+
                 final subtitleParts = [
-                  if (judge.assignedCategory.isNotEmpty) judge.assignedCategory,
                   if (judge.phone.isNotEmpty) judge.phone,
+                  assignedPrograms.isEmpty
+                      ? 'No programs assigned'
+                      : 'Assigned: ${assignedPrograms.map((p) => p.programName).join(', ')}',
                 ];
                 return AdminListTile(
                   title: judge.name,
-                  subtitle: subtitleParts.isEmpty ? 'No details added' : subtitleParts.join(' • '),
+                  subtitle: subtitleParts.join(' • '),
                   leadingIcon: Icons.gavel_rounded,
                   leadingColor: const Color(0xFFEF4444),
                   onEdit: () => _openForm(context, judge: judge),
