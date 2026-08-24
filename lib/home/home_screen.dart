@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../admin/providers/curosel_provider.dart';
 import '../registration/register_provider.dart';
+import 'home_stats_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,510 +20,571 @@ class HomeScreen extends StatelessWidget {
     "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
   ];
 
+  static const List<Color> _rankBgPalette = [
+    Color(0xffFEF9C3),
+    Color(0xffF3F4F6),
+    Color(0xffFFEDD5),
+    Color(0xffF8FAFC),
+    Color(0xffE0E7FF),
+  ];
+  static const List<Color> _rankTextPalette = [
+    Color(0xffA16207),
+    Color(0xff374151),
+    Color(0xff9A3412),
+    Color(0xff64748B),
+    Color(0xff4338CA),
+  ];
+  static const List<Color> _dotPalette = [
+    Color(0xffEF4444),
+    Color(0xff3B82F6),
+    Color(0xff22C55E),
+    Color(0xffA855F7),
+    Color(0xffF97316),
+  ];
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Log out?"),
+        content: const Text("You'll need to sign in again to access your account."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xffEF4444)),
+            child: const Text("Log Out"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<ProfileProvider>().logout();
+      if (context.mounted) {
+        context.read<RegistrationProvider>().clearRegistrationSelections();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    List<Color> rankBgColors = [
-      const Color(0xffFEF9C3), // 1
-      const Color(0xffF3F4F6), // 2
-      const Color(0xffFFEDD5), // 3
-      const Color(0xffF8FAFC), // 4
-    ];
-
-    List<Color> rankTextColors = [
-      const Color(0xffA16207),
-      const Color(0xff374151),
-      const Color(0xff9A3412),
-      const Color(0xff64748B),
-    ];
-
-    List<Color> dotColors = [
-      const Color(0xffEF4444),
-      const Color(0xff3B82F6),
-      const Color(0xff22C55E),
-      const Color(0xffA855F7),
-    ];
-
-    List<String> teamNames = [
-      "Phoenix",
-      "Thunderbolts",
-      "Spartans",
-      "Titans",
-    ];
-
-    List<String> points = [
-      "350",
-      "450",
-      "390",
-      "310",
-    ];
-
-    return Scaffold(
-      backgroundColor: const Color(0xffFFF9F5),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Column(
-              children: [
-                FadeSlideAnimation(
-                  order: 1,
-                  from: SlideFrom.top,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFFFF6B6B).withValues(alpha: 0.08),
-                          const Color(0xFF667EEA).withValues(alpha: 0.08),
-                        ],
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            "🎨 🎭 🎪 🎵",
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          ShaderMask(
-                            shaderCallback: (bounds) {
-                              return const LinearGradient(
-                                colors: [
-                                  Color(0xFFFF6B6B), // stop 0%
-                                  Color(0xFFFF8E53), // stop 50%
-                                  Color(0xFF667EEA), // stop 100%
-                                ],
-                                stops: [0.0, 0.5, 1.0],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ).createShader(bounds);
-                            },
-                            child: Text(
-                              "MEERAS FEST 2K27",
-                              style: GoogleFonts.inter(
-                                fontSize: 25,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            textAlign: TextAlign.center,
-                            "Meerasul Ambiya Higher secondary Madrassa\nOravampuram",
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xff6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                /// ================= CAROUSEL =================
-                FadeSlideAnimation(
-                  order: 2,
-                  from: SlideFrom.bottom,
-                  child: Consumer<CarouselProvider>(
-                    builder: (context, carouselPro, child) {
-                      if (carouselPro.isLoading) {
-                        return Container(
-                          height: 170,
-                          decoration: BoxDecoration(
-                            color: const Color(0xffF3F4F6),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      }
-
-                      final urls = carouselPro.images.isNotEmpty
-                          ? carouselPro.images.map((e) => e.imageUrl).toList()
-                          : _fallbackCarouselImages;
-
-                      return _FestCarousel(imageUrls: urls);
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: FadeSlideAnimation(
-                        order: 3,
-                        from: SlideFrom.bottom,
-                        child: Consumer<HomeProvider>(
-                          builder: (context, homePro, child) {
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () {
-                                homePro.changeBottomIndex(1);
-                              },
-                              child: Container(
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 12,
-                                      spreadRadius: 1,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: const Color(0xffFFEDD5),
-                                      radius: 18,
-                                      child: SvgPicture.asset(
-                                        "assets/icons/resultIcon.svg",
-                                        colorFilter: const ColorFilter.mode(
-                                            Color(0xffFF8E53), BlendMode.srcIn),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      "Result",
-                                      style: GoogleFonts.inter(
-                                        color: const Color(0xff1F2937),
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FadeSlideAnimation(
-                        order: 4,
-                        from: SlideFrom.bottom,
-                        child: Consumer<ProfileProvider>(
-                          builder: (context, profilePro, child) {
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () {
-                                profilePro.logout();
-                                context
-                                    .read<RegistrationProvider>()
-                                    .clearRegistrationSelections();
-                              },
-                              child: Container(
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 12,
-                                      spreadRadius: 1,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: const Color(0xffF3E8FF),
-                                      radius: 18,
-                                      child: Icon(Icons.login_rounded,
-                                          size: 18, color: const Color(0xff667EEA)),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      "Logout",
-                                      style: GoogleFonts.inter(
-                                        color: const Color(0xff1F2937),
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Latest Winners",
-                      style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xff1F2937)),
-                    ),
-                    Consumer<HomeProvider>(builder: (context, homePro, child) {
-                      return InkWell(
-                        onTap: () {
-                          homePro.changeBottomIndex(1);
-                        },
-                        child: Row(
-                          children: [
-                            Text(
-                              "View All",
-                              style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xff667EEA)),
-                            ),
-                            const Icon(Icons.arrow_forward_outlined,
-                                color: Color(0xff667EEA), size: 13)
+    return ChangeNotifierProvider(
+      create: (_) => HomeStatsProvider()..fetchAll(),
+      child: Scaffold(
+        backgroundColor: const Color(0xffFFF9F5),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Column(
+                children: [
+                  FadeSlideAnimation(
+                    order: 1,
+                    from: SlideFrom.top,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFFFF6B6B).withValues(alpha: 0.08),
+                            const Color(0xFF667EEA).withValues(alpha: 0.08),
                           ],
                         ),
-                      );
-                    })
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                FadeSlideAnimation(
-                  order: 5,
-                  from: SlideFrom.right,
-                  child: SizedBox(
-                    height: 150,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8),
-                          child: Container(
-                            width: 240,
-                            height: 140,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withValues(alpha: 0.18),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                              color: Colors.white,
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              "🎨 🎭 🎪 🎵",
+                              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Song",
-                                      style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xff6B7280))),
-                                  const SizedBox(height: 6),
-                                  Text("Classical Dance",
-                                      style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xff1F2937))),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: const Color(0xffF9FAFB),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10.0),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text("🥇", style: GoogleFonts.inter(fontSize: 18)),
-                                          const SizedBox(width: 10),
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text("Alice Johnson",
-                                                  style: GoogleFonts.inter(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: const Color(0xff374151))),
-                                              Text("Phoenix",
-                                                  style: GoogleFonts.inter(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w400,
-                                                      color: const Color(0xff6B7280))),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 6),
+                            ShaderMask(
+                              shaderCallback: (bounds) {
+                                return const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFF6B6B),
+                                    Color(0xFFFF8E53),
+                                    Color(0xFF667EEA),
+                                  ],
+                                  stops: [0.0, 0.5, 1.0],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ).createShader(bounds);
+                              },
+                              child: Text(
+                                "MEERAS FEST 2K27",
+                                style: GoogleFonts.inter(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                        );
+                            const SizedBox(height: 4),
+                            Text(
+                              textAlign: TextAlign.center,
+                              "Meerasul Ambiya Higher secondary Madrassa\nOravampuram",
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xff6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  /// ================= CAROUSEL =================
+                  FadeSlideAnimation(
+                    order: 2,
+                    from: SlideFrom.bottom,
+                    child: Consumer<CarouselProvider>(
+                      builder: (context, carouselPro, child) {
+                        if (carouselPro.isLoading) {
+                          return Container(
+                            height: 170,
+                            decoration: BoxDecoration(
+                              color: const Color(0xffF3F4F6),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+                        final urls = carouselPro.images.isNotEmpty
+                            ? carouselPro.images.map((e) => e.imageUrl).toList()
+                            : _fallbackCarouselImages;
+                        return _FestCarousel(imageUrls: urls);
                       },
                     ),
                   ),
-                ),
 
-                FadeSlideAnimation(
-                  order: 6,
-                  from: SlideFrom.bottom,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.18),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                        color: Colors.white,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
+                  const SizedBox(height: 18),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FadeSlideAnimation(
+                          order: 3,
+                          from: SlideFrom.bottom,
+                          child: Consumer<HomeProvider>(
+                            builder: (context, homePro, child) {
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => homePro.changeBottomIndex(1),
+                                child: Container(
+                                  height: 90,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xffFFEDD5),
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.08),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                  child: SvgPicture.asset(
-                                    "assets/icons/resultIcon.svg",
-                                    height: 14,
-                                    width: 14,
-                                    colorFilter: const ColorFilter.mode(
-                                        Color(0xffFF8E53), BlendMode.srcIn),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: const Color(0xffFFEDD5),
+                                        radius: 18,
+                                        child: SvgPicture.asset(
+                                          "assets/icons/resultIcon.svg",
+                                          colorFilter: const ColorFilter.mode(
+                                              Color(0xffFF8E53), BlendMode.srcIn),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        "Result",
+                                        style: GoogleFonts.inter(
+                                          color: const Color(0xff1F2937),
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      )
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(width: 10),
-                                Text("Overall Standings",
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FadeSlideAnimation(
+                          order: 4,
+                          from: SlideFrom.bottom,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => _confirmLogout(context),
+                            child: Container(
+                              height: 90,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: const Color(0xffF3E8FF),
+                                    radius: 18,
+                                    child: Icon(Icons.login_rounded,
+                                        size: 18, color: const Color(0xff667EEA)),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Logout",
                                     style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xff1F2937))),
-                              ],
+                                      color: const Color(0xff1F2937),
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 14),
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: 4,
-                              separatorBuilder: (context, index) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                return Container(
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  /// ================= LATEST WINNERS =================
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Latest Winners",
+                        style: GoogleFonts.inter(
+                            fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xff1F2937)),
+                      ),
+                      Consumer<HomeProvider>(builder: (context, homePro, child) {
+                        return InkWell(
+                          onTap: () => homePro.changeBottomIndex(1),
+                          child: Row(
+                            children: [
+                              Text(
+                                "View All",
+                                style: GoogleFonts.inter(
+                                    fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xff667EEA)),
+                              ),
+                              const Icon(Icons.arrow_forward_outlined, color: Color(0xff667EEA), size: 13)
+                            ],
+                          ),
+                        );
+                      })
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  FadeSlideAnimation(
+                    order: 5,
+                    from: SlideFrom.right,
+                    child: Consumer<HomeStatsProvider>(
+                      builder: (context, stats, child) {
+                        if (stats.isLoading) {
+                          return const SizedBox(
+                            height: 150,
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+                        if (stats.latestWinners.isEmpty) {
+                          return Container(
+                            height: 100,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Text(
+                              "No published results yet",
+                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          );
+                        }
+                        return SizedBox(
+                          height: 150,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: stats.latestWinners.length,
+                            itemBuilder: (context, index) {
+                              final w = stats.latestWinners[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8),
+                                child: Container(
+                                  width: 240,
+                                  height: 140,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: const Color(0xffF9FAFB),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withValues(alpha: 0.18),
+                                        blurRadius: 10,
+                                        spreadRadius: 1,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                    color: Colors.white,
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Row(
+                                    padding: const EdgeInsets.all(14.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        CircleAvatar(
-                                          radius: 12,
-                                          backgroundColor: rankBgColors[index],
-                                          child: Text(
-                                            "${index + 1}",
+                                        Text("Program",
                                             style: GoogleFonts.inter(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: rankTextColors[index],
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 9),
-                                          child: CircleAvatar(
-                                            radius: 3,
-                                            backgroundColor: dotColors[index],
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            teamNames[index],
+                                                fontSize: 10, fontWeight: FontWeight.w500, color: const Color(0xff6B7280))),
+                                        const SizedBox(height: 6),
+                                        Text(w.programName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.inter(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: const Color(0xff1F2937),
-                                            ),
+                                                fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xff1F2937))),
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(12),
+                                            color: const Color(0xffF9FAFB),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(right: 6),
-                                          child: Text(
-                                            points[index],
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xff667EEA),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(10.0),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text("🥇", style: GoogleFonts.inter(fontSize: 18)),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(w.studentName,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: GoogleFonts.inter(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: const Color(0xff374151))),
+                                                      Text(w.teamName,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: GoogleFonts.inter(
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.w400,
+                                                              color: const Color(0xff6B7280))),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ),
-                                        Text(
-                                          "Pts",
-                                          style: GoogleFonts.inter(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w400,
-                                            color: const Color(0xff9CA3AF),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 12),
-              ],
+                  /// ================= OVERALL STANDINGS (per category) =================
+                  FadeSlideAnimation(
+                    order: 6,
+                    from: SlideFrom.bottom,
+                    child: Consumer<HomeStatsProvider>(
+                      builder: (context, stats, child) {
+                        if (stats.isLoading) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          );
+                        }
+                        if (stats.standingsByCategory.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Text("No published standings yet",
+                                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final categories = stats.standingsByCategory.keys.toList()..sort();
+
+                        return Column(
+                          children: categories.map((category) {
+                            final teams = stats.standingsByCategory[category]!;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withValues(alpha: 0.18),
+                                      blurRadius: 10,
+                                      spreadRadius: 1,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                  color: Colors.white,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xffFFEDD5),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: SvgPicture.asset(
+                                              "assets/icons/resultIcon.svg",
+                                              height: 14,
+                                              width: 14,
+                                              colorFilter: const ColorFilter.mode(
+                                                  Color(0xffFF8E53), BlendMode.srcIn),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text("$category Standings",
+                                              style: GoogleFonts.inter(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color(0xff1F2937))),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ListView.separated(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        itemCount: teams.length,
+                                        separatorBuilder: (context, index) => const SizedBox(height: 10),
+                                        itemBuilder: (context, index) {
+                                          final team = teams[index];
+                                          final paletteIndex = index % _rankBgPalette.length;
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(12),
+                                              color: const Color(0xffF9FAFB),
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(10),
+                                              child: Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 12,
+                                                    backgroundColor: _rankBgPalette[paletteIndex],
+                                                    child: Text(
+                                                      "${index + 1}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: _rankTextPalette[paletteIndex],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                                                    child: CircleAvatar(
+                                                      radius: 3,
+                                                      backgroundColor: _dotPalette[paletteIndex],
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      team.teamName,
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: const Color(0xff1F2937),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(right: 6),
+                                                    child: Text(
+                                                      "${team.totalPoints}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: const Color(0xff667EEA),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "Pts",
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w400,
+                                                      color: const Color(0xff9CA3AF),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+                ],
+              ),
             ),
           ),
         ),
@@ -588,10 +650,7 @@ class _FestCarouselState extends State<_FestCarousel> {
               final isActive = index == _currentPage;
               return AnimatedPadding(
                 duration: const Duration(milliseconds: 250),
-                padding: EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: isActive ? 0 : 12,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: isActive ? 0 : 12),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: Stack(
@@ -604,15 +663,12 @@ class _FestCarouselState extends State<_FestCarousel> {
                           if (progress == null) return child;
                           return Container(
                             color: const Color(0xffF3F4F6),
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           );
                         },
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: const Color(0xffF3F4F6),
-                          child: const Icon(Icons.image_not_supported_outlined,
-                              color: Color(0xff9CA3AF)),
+                          child: const Icon(Icons.image_not_supported_outlined, color: Color(0xff9CA3AF)),
                         ),
                       ),
                       Positioned(
@@ -625,19 +681,12 @@ class _FestCarouselState extends State<_FestCarousel> {
                             gradient: LinearGradient(
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.55),
-                                Colors.transparent,
-                              ],
+                              colors: [Colors.black.withValues(alpha: 0.55), Colors.transparent],
                             ),
                           ),
                           child: Text(
                             "Meera's Fest 2K27",
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -702,17 +751,9 @@ class _FadeSlideAnimationState extends State<FadeSlideAnimation> {
   @override
   void initState() {
     super.initState();
-
-    Future.delayed(
-      Duration(milliseconds: widget.delayMs * widget.order),
-          () {
-        if (mounted) {
-          setState(() {
-            animate = true;
-          });
-        }
-      },
-    );
+    Future.delayed(Duration(milliseconds: widget.delayMs * widget.order), () {
+      if (mounted) setState(() => animate = true);
+    });
   }
 
   Offset getOffset() {

@@ -98,7 +98,7 @@ class ResultProvider extends ChangeNotifier {
       // Only judged registrations have a RANK > 0 — unjudged ones have no
       // RANK field at all, so this range query naturally excludes them.
       final registrationsSnap =
-      await _registrationsCollection.where('RANK', isGreaterThan: 0).get();
+      await _registrationsCollection.where('RANK', isGreaterThan: 0).where("STATUS",isEqualTo: "Published").get();
       final teamsSnap = await _teamsCollection.get();
 
       final teamNames = {

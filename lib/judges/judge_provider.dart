@@ -473,6 +473,7 @@ class JudgeProvider extends ChangeNotifier {
           'PLACE_POINT': r.placePoint,
           'POINT': r.totalPoint,
           'JUDGED_BY': judgeId,
+          'STATUS':"Resulted",
           'judgedAt': FieldValue.serverTimestamp(),
         });
       }
