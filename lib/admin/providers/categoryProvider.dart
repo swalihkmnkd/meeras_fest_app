@@ -17,6 +17,7 @@ class CategoryProvider extends ChangeNotifier {
   String? gender;
   String? classFrom;
   String? classTo;
+  bool isGeneral = false;
   String? _editingId;
   CategoryProvider() {
     fetchCategories();
@@ -47,6 +48,7 @@ class CategoryProvider extends ChangeNotifier {
     gender = null;
     classFrom = null;
     classTo = null;
+    isGeneral = false;
     notifyListeners();
   }
 
@@ -57,6 +59,7 @@ class CategoryProvider extends ChangeNotifier {
     gender = category.gender;
     classFrom = category.classFrom;
     classTo = category.classTo;
+    isGeneral = category.isGeneral;
     notifyListeners();
   }
 
@@ -72,6 +75,11 @@ class CategoryProvider extends ChangeNotifier {
 
   void setClassTo(String? value) {
     classTo = value;
+    notifyListeners();
+  }
+
+  void setIsGeneral(bool value) {
+    isGeneral = value;
     notifyListeners();
   }
 
@@ -94,6 +102,7 @@ class CategoryProvider extends ChangeNotifier {
         gender: gender!,
         classFrom: classFrom!,
         classTo: classTo!,
+        isGeneral: isGeneral,
       );
 
       if (_editingId == null) {

@@ -7,6 +7,7 @@ import '../models/programModel.dart';
 const String kCategoriesCollection = 'CATEGORIES';
 const String kCategoryNameField = 'NAME';
 const String kCategoryTeamCategoryField = 'GENDER'; // matches studentCategory (Boys/Girls/Mixed)
+const String kCategoryIsGeneralField = 'IS_GENERAL'; // ⬅️ NEW
 
 class ProgramProvider extends ChangeNotifier {
   final _collection = FirebaseFirestore.instance.collection('PROGRAMS');
@@ -33,11 +34,17 @@ class ProgramProvider extends ChangeNotifier {
   String? stageType; // "Stage" or "Non Stage"
   String? _editingId;
 
-  // ── New: Firebase-driven Program Category options ──
+  // ── Firebase-driven Program Category options ──
   List<String> programCategoryOptions = [];
+  Map<String, bool> _categoryGeneralByName = {}; // ⬅️ NEW: name -> IS_GENERAL
   bool isLoadingCategories = false;
 
   bool get isEditing => _editingId != null;
+
+  /// ⬅️ NEW: derives IS_GENERAL for the currently selected Program Category.
+  /// False if nothing is selected or the category isn't found in the map.
+  bool get isGeneral =>
+      programCategory != null ? (_categoryGeneralByName[programCategory] ?? false) : false;
 
   ProgramProvider() {
     fetchPrograms();
@@ -59,13 +66,16 @@ class ProgramProvider extends ChangeNotifier {
   }
 
   /// Fetches Program Category options from Firebase filtered by the
-  /// currently selected Team Category (studentCategory). If the current
-  /// programCategory value isn't among the fetched options (e.g. stale
-  /// data from before this field's format changed), it's cleared —
-  /// keeping an invalid value crashes DropdownButtonFormField.
+  /// currently selected Team Category (studentCategory). Also builds a
+  /// name -> IS_GENERAL lookup map so `isGeneral` can be derived once a
+  /// Program Category is picked. If the current programCategory value
+  /// isn't among the fetched options (e.g. stale data from before this
+  /// field's format changed), it's cleared — keeping an invalid value
+  /// crashes DropdownButtonFormField.
   Future<void> _loadCategoryOptions() async {
     if (studentCategory == null) {
       programCategoryOptions = [];
+      _categoryGeneralByName = {};
       programCategory = null;
       notifyListeners();
       return;
@@ -85,6 +95,13 @@ class ProgramProvider extends ChangeNotifier {
           .where((name) => name.isNotEmpty)
           .toList();
 
+      // ⬅️ NEW: build name -> IS_GENERAL map from the same query
+      _categoryGeneralByName = {
+        for (final d in snap.docs)
+          (d.data()[kCategoryNameField] ?? '').toString():
+          (d.data()[kCategoryIsGeneralField] ?? false) as bool
+      };
+
       // ✅ Always clear an invalid/stale selection — keeping a value that
       // isn't in the fetched options crashes DropdownButtonFormField.
       if (!programCategoryOptions.contains(programCategory)) {
@@ -93,6 +110,7 @@ class ProgramProvider extends ChangeNotifier {
     } catch (e) {
       errorMessage = 'Failed to load categories: $e';
       programCategoryOptions = [];
+      _categoryGeneralByName = {};
     } finally {
       isLoadingCategories = false;
       notifyListeners();
@@ -115,6 +133,7 @@ class ProgramProvider extends ChangeNotifier {
     studentCategory = null;
     programCategory = null;
     programCategoryOptions = [];
+    _categoryGeneralByName = {};
     stageType = null;
     notifyListeners();
   }
@@ -134,13 +153,11 @@ class ProgramProvider extends ChangeNotifier {
     totalParticipantsCtrl.text = program.totalParticipants.toString();
     studentCategory = program.studentCategory;
     programCategory = program.programCategory; // tentative until options load
-    // ⚠️ TODO: ProgramModel has no stageType field yet, so it can't be
-    // restored here. Add `final String stageType;` to ProgramModel
-    // (+ fromDoc/toMap) to make editing round-trip this value.
     stageType = program.stageType;
     notifyListeners();
 
-    // ✅ fetch matching categories; stale/mismatched selections get cleared
+    // ✅ fetch matching categories (+ IS_GENERAL map); stale/mismatched
+    // selections get cleared
     _loadCategoryOptions();
   }
 
@@ -153,6 +170,8 @@ class ProgramProvider extends ChangeNotifier {
 
   void setProgramCategory(String value) {
     programCategory = value;
+    // isGeneral is derived via the getter from _categoryGeneralByName,
+    // so nothing else needs to happen here.
     notifyListeners();
   }
 
@@ -229,11 +248,9 @@ class ProgramProvider extends ChangeNotifier {
         programCategory: programCategory!,
         totalParticipants: totalParticipants,
         stageType: stageType,
+        isGeneral: isGeneral, // ⬅️ NEW: TRUE if selected category is General, else FALSE
       );
 
-      // ⚠️ stageType is merged in manually since ProgramModel doesn't
-      // define it yet — once you add it to the model, this can just
-      // become part of model.toMap() instead.
       final data = model.toMap();
 
       if (_editingId == null) {

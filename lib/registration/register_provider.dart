@@ -287,6 +287,7 @@ class RegistrationProvider extends ChangeNotifier {
         studentCategory: student.gender,
         programCategory: program.programCategory, // actual category name, e.g. "Senior"
         stageType: stageType,
+        isGeneral: program.isGeneral,   // ⬅️ NEW
         registrationId: student.registerNumber??'',
         registrationNumber: student.registerNumber??'',
       ));

@@ -10,6 +10,7 @@ class RegistrationModel {
   final String studentCategory;
   final String programCategory; // the actual category name, e.g. "Senior" (from CATEGORIES.NAME)
   final String stageType; // "Stage" / "Non Stage"
+  final bool isGeneral; // copied from ProgramModel.isGeneral at registration time
   final Timestamp? createdAt;
   final String registrationId;
   final String registrationNumber;
@@ -24,6 +25,7 @@ class RegistrationModel {
     required this.studentCategory,
     required this.programCategory,
     required this.stageType,
+    this.isGeneral = false,
     this.createdAt,
     required this.registrationId,
     required this.registrationNumber,
@@ -38,6 +40,7 @@ class RegistrationModel {
     'STUDENT_CATEGORY': studentCategory,
     'PROGRAM_CATEGORY': programCategory,
     'STAGE_TYPE': stageType,
+    'IS_GENERAL': isGeneral,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
     'REGISTRATION_ID': registrationId ,
     'REGISTER_NUMBER': registrationNumber,
@@ -60,6 +63,9 @@ class RegistrationModel {
       // they'll come back as '' here, which just means they won't match
       // any Stage/Non Stage filter. That's expected for legacy data.
       stageType: data['STAGE_TYPE'] ?? '',
+      // ⚠️ Same as above: legacy registrations without IS_GENERAL come
+      // back as false, which is a safe default.
+      isGeneral: data['IS_GENERAL'] ?? false,
       createdAt: data['createdAt'],
     );
   }

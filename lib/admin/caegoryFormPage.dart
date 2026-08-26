@@ -57,6 +57,15 @@ class CategoryFormPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   GenderSelector(value: provider.gender, onChanged: provider.setGender),
+                  const SizedBox(height: 18),
+                  CheckboxListTile(
+                    value: provider.isGeneral,
+                    onChanged: (value) => provider.setIsGeneral(value ?? false),
+                    title: const Text('General'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: const Color(0xFFF59E0B),
+                  ),
                   const SizedBox(height: 22),
                   AdminSubmitButton(
                     label: provider.isEditing ? 'Update Category' : 'Save Category',

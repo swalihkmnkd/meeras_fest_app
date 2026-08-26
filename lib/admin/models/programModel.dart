@@ -16,6 +16,7 @@ class ProgramModel {
   final String programCategory; // Stage / Non Stage / General
   final String? stageType; // Stage / Non Stage
   final int totalParticipants;
+  final bool isGeneral; // TRUE if the selected Program Category is General
   final Timestamp? createdAt;
   // Assignment state. Not written by ProgramModel.toMap() — these are only
   // ever changed by JudgeProvider.assignProgram/unassignProgram, so normal
@@ -39,6 +40,7 @@ class ProgramModel {
     required this.programCategory,
     required this.totalParticipants,
     this.stageType,
+    this.isGeneral = false,
     this.createdAt,
     this.status = '',
     this.assignedTo = '',
@@ -61,6 +63,7 @@ class ProgramModel {
     'PROGRAM_CATEGORY': programCategory,
     'STAGE_TYPE': stageType,
     'TOTAL_PARTICIPANTS': totalParticipants,
+    'IS_GENERAL': isGeneral,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
   };
 
@@ -86,6 +89,7 @@ class ProgramModel {
       programCategory: data['PROGRAM_CATEGORY'] ?? 'Stage',
       stageType: data['STAGE_TYPE'] as String?,
       totalParticipants: int_(data['TOTAL_PARTICIPANTS']),
+      isGeneral: data['IS_GENERAL'] ?? false,
       createdAt: data['createdAt'],
       status: (data['STATUS'] ?? '').toString(),
       assignedTo: (data['ASSIGNED_TO'] ?? '').toString(),

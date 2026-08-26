@@ -6,6 +6,7 @@ class CategoryModel {
   final String gender;
   final String classFrom;
   final String classTo;
+  final bool isGeneral;
   final Timestamp? createdAt;
 
   CategoryModel({
@@ -14,6 +15,7 @@ class CategoryModel {
     required this.gender,
     required this.classFrom,
     required this.classTo,
+    this.isGeneral = false,
     this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class CategoryModel {
     'GENDER': gender,
     'CLASS_FROM': classFrom,
     'CLASS_TO': classTo,
+    'IS_GENERAL': isGeneral,
     'CREATED_AT': createdAt ?? FieldValue.serverTimestamp(),
   };
 
@@ -35,6 +38,7 @@ class CategoryModel {
       gender: data['GENDER'] ?? 'Mixed',
       classFrom: data['CLASS_FROM'] ?? '',
       classTo: data['CLASS_TO'] ?? '',
+      isGeneral: data['IS_GENERAL'] ?? false,
       createdAt: data['CREATED_AT'],
     );
   }
