@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:meeras_fest_app/admin/providers/curosel_provider.dart';
+import 'package:meeras_fest_app/admin/providers/resultProvider.dart';
+import 'package:meeras_fest_app/admin/registration_setting_page.dart';
+import 'package:meeras_fest_app/admin/resultReviewPage.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
@@ -20,6 +23,7 @@ class OverviewPage extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardProvider()..fetchCounts()),
         ChangeNotifierProvider(create: (_) => CarouselProvider()),
+        ChangeNotifierProvider(create: (_) => ResultsPublishProvider()..fetchPending()),
       ],
       child: const _OverviewView(),
     );
@@ -29,44 +33,10 @@ class OverviewPage extends StatelessWidget {
 class _OverviewView extends StatelessWidget {
   const _OverviewView();
 
-  List<Map<String, dynamic>> _status() => [
-    {
-      "title": 'Approved',
-      'name': "John Doe",
-      "program": "Water Color",
-      'textColor': const Color(0xff22C55E),
-      'backColor': const Color(0xffDCFCE7),
-    },
-    {
-      "title": 'Pending',
-      'name': "John Doe",
-      "program": "Water Color",
-      'textColor': const Color(0xffF97316),
-      'backColor': const Color(0xffFFEDD5),
-    },
-    {
-      "title": 'Approved',
-      'name': "John Doe",
-      "program": "Water Color",
-      'textColor': const Color(0xff22C55E),
-      'backColor': const Color(0xffDCFCE7),
-    },
-    {
-      "title": 'Approved',
-      'name': "John Doe",
-      "program": "Water Color",
-      'textColor': const Color(0xff22C55E),
-      'backColor': const Color(0xffDCFCE7),
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final status = _status();
-
-    return Consumer<DashboardProvider>(
-      builder: (context, dashboard, child) {
-
+    return Consumer2<DashboardProvider, ResultsPublishProvider>(
+      builder: (context, dashboard, results, child) {
         return SizedBox(
           child: Column(
             children: [
@@ -79,7 +49,7 @@ class _OverviewView extends StatelessWidget {
                 childAspectRatio: 1.25,
                 children: [
                   AdminActionCard(
-                    count: dashboard.studentCount.toString()??'-',
+                    count: dashboard.studentCount.toString(),
                     title: "Add Students",
                     subtitle: "Upload via Excel",
                     icon: Icons.school_rounded,
@@ -90,7 +60,7 @@ class _OverviewView extends StatelessWidget {
                     ),
                   ),
                   AdminActionCard(
-                    count: dashboard.programCount.toString()??'-',
+                    count: dashboard.programCount.toString(),
                     title: "Programs",
                     subtitle: "View & manage",
                     icon: Icons.event_note_rounded,
@@ -101,7 +71,7 @@ class _OverviewView extends StatelessWidget {
                     ),
                   ),
                   AdminActionCard(
-                    count: dashboard.categoryCount.toString()??'-',
+                    count: dashboard.categoryCount.toString(),
                     title: "Categories",
                     subtitle: "View & manage",
                     icon: Icons.category_rounded,
@@ -112,7 +82,7 @@ class _OverviewView extends StatelessWidget {
                     ),
                   ),
                   AdminActionCard(
-                    count: dashboard.judgeCount.toString()??'-',
+                    count: dashboard.judgeCount.toString(),
                     title: "Judges",
                     subtitle: "View & manage",
                     icon: Icons.gavel_rounded,
@@ -123,7 +93,7 @@ class _OverviewView extends StatelessWidget {
                     ),
                   ),
                   AdminActionCard(
-                    count: dashboard.teamCount.toString()??'-',
+                    count: dashboard.teamCount.toString(),
                     title: "Teams",
                     subtitle: "View & manage",
                     icon: Icons.groups_rounded,
@@ -133,12 +103,38 @@ class _OverviewView extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const TeamsListPage()),
                     ),
                   ),
+                  AdminActionCard(
+                    count: results.pendingResults.length.toString(),
+                    title: "Publish Results",
+                    subtitle: "Review before publishing",
+                    icon: Icons.publish_rounded,
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ResultsReviewPage()),
+                    ),
+                  ),
+                  // ⬅️ NEW: admin-editable Stage / Non Stage registration caps
+                  AdminActionCard(
+                    count: '${dashboard.stageRegistrationCount + dashboard.nonStageRegistrationCount}',
+                    title: "Registration Limits",
+                    subtitle: "Set Stage :${dashboard.stageRegistrationCount} / Non Stage :${dashboard.nonStageRegistrationCount}",
+                    icon: Icons.rule_rounded,
+                    color: const Color(0xFF0EA5E9),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RegistrationSettingsPage()),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 15),
+
               // ---------- Home page carousel manager ----------
               const CarouselSection(),
               const SizedBox(height: 15),
+
+              // Real pending results replacing the old dummy list
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -156,47 +152,79 @@ class _OverviewView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Recent Registrations",
-                      style: TextStyle(color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                    const SizedBox(height: 15),
-                    ListView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: status.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(status[index]['name'],
-                                      style: const TextStyle(
-                                          color: Color(0xff1F2937), fontWeight: FontWeight.w400, fontSize: 12)),
-                                  Text(status[index]['program'],
-                                      style: const TextStyle(color: Color(0xff6B7280), fontSize: 12)),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: status[index]['backColor'],
-                                  borderRadius: BorderRadius.circular(9999),
-                                ),
-                                child: Text(status[index]['title'],
-                                    style: TextStyle(
-                                        color: status[index]['textColor'], fontWeight: FontWeight.w400, fontSize: 12)),
-                              )
-                            ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Results Awaiting Publish",
+                          style: TextStyle(color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        if (results.pendingResults.isNotEmpty)
+                          TextButton(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ResultsReviewPage()),
+                            ),
+                            child: const Text('View All', style: TextStyle(fontSize: 12)),
                           ),
-                        );
-                      },
+                      ],
                     ),
+                    const SizedBox(height: 10),
+                    if (results.isLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (results.pendingResults.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          "Nothing waiting to be published.",
+                          style: TextStyle(color: Color(0xff9CA3AF), fontSize: 12),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        padding: EdgeInsets.zero,
+                        // Preview only the first 5 here; full list lives on
+                        // ResultsReviewPage via "View All".
+                        itemCount: results.pendingResults.length > 5 ? 5 : results.pendingResults.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final r = results.pendingResults[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(r.studentName,
+                                          style: const TextStyle(
+                                              color: Color(0xff1F2937), fontWeight: FontWeight.w400, fontSize: 12)),
+                                      Text(r.programName,
+                                          style: const TextStyle(color: Color(0xff6B7280), fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xffFFEDD5),
+                                    borderRadius: BorderRadius.circular(9999),
+                                  ),
+                                  child: const Text('Resulted',
+                                      style: TextStyle(
+                                          color: Color(0xffF97316), fontWeight: FontWeight.w400, fontSize: 12)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -204,6 +232,35 @@ class _OverviewView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _StatChip({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xff6B7280))),
+        ],
+      ),
     );
   }
 }

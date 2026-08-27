@@ -13,6 +13,7 @@ class AssignedProgram {
   final String category;
   final String studentCategory;
   final String stageType;
+  final bool isGeneral;
   final num firstScore;
   final num secondScore;
   final num thirdScore;
@@ -25,6 +26,7 @@ class AssignedProgram {
     required this.category,
     required this.studentCategory,
     required this.stageType,
+    required this.isGeneral,
     required this.firstScore,
     required this.secondScore,
     required this.thirdScore,
@@ -53,6 +55,7 @@ class AssignedProgram {
       category: (data['PROGRAM_CATEGORY'] ?? '').toString(),
       studentCategory: (data['STUDENT_CATEGORY'] ?? '').toString(),
       stageType: (data['STAGE_TYPE'] ?? '').toString(),
+      isGeneral: data['IS_GENERAL'] == true,
       firstScore: (data['FIRST_SCORE'] ?? 0) as num,
       secondScore: (data['SECOND_SCORE'] ?? 0) as num,
       thirdScore: (data['THIRD_SCORE'] ?? 0) as num,
@@ -89,6 +92,7 @@ class RegistrationScore {
   num placePoint;
   num totalPoint;
   bool judged;
+  final String status; // '', 'Assigned', 'Resulted', 'Published'
   final TextEditingController controller;
 
   RegistrationScore({
@@ -103,6 +107,7 @@ class RegistrationScore {
     required this.placePoint,
     required this.totalPoint,
     required this.judged,
+    required this.status,
   }) : controller = TextEditingController(text: judged ? score.toString() : '');
 
   factory RegistrationScore.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -120,6 +125,7 @@ class RegistrationScore {
       placePoint: (data['PLACE_POINT'] ?? 0) as num,
       totalPoint: (data['POINT'] ?? 0) as num,
       judged: judged,
+      status: (data['STATUS'] ?? '').toString(),
     );
   }
 
@@ -294,6 +300,7 @@ class JudgeProvider extends ChangeNotifier {
             programCategory: existing.programCategory,
             stageType: existing.stageType,
             totalParticipants: existing.totalParticipants,
+            isGeneral: existing.isGeneral,
             createdAt: existing.createdAt,
             status: '',
             assignedTo: '',
@@ -310,6 +317,12 @@ class JudgeProvider extends ChangeNotifier {
   /// Assigns [programId] to [judgeId]: sets STATUS/ASSIGNED_TO on the
   /// program and adds the id to the judge's ASSIGNED_PROGRAM_IDS array,
   /// both in a single batch so they can't drift out of sync.
+  ///
+  /// ⬅️ NEW: also sets STATUS = 'Assigned' on every REGISTRATIONS doc
+  /// matching this PROGRAM_ID, so it's visible that those students are now
+  /// up for judging. Registrations already 'Resulted' or 'Published' (i.e.
+  /// already judged) are left untouched — assigning a program shouldn't
+  /// erase existing results.
   Future<String?> assignProgram(String judgeId, String programId) async {
     try {
       final batch = FirebaseFirestore.instance.batch();
@@ -320,6 +333,16 @@ class JudgeProvider extends ChangeNotifier {
       batch.update(_collection.doc(judgeId), {
         'ASSIGNED_PROGRAM_IDS': FieldValue.arrayUnion([programId]),
       });
+
+      final regSnap = await _registrationsCollection
+          .where('PROGRAM_ID', isEqualTo: programId)
+          .get();
+      for (final doc in regSnap.docs) {
+        final status = (doc.data()['STATUS'] ?? '').toString();
+        if (status == 'Resulted' || status == 'Published') continue;
+        batch.update(doc.reference, {'STATUS': 'Assigned'});
+      }
+
       await batch.commit();
       await Future.wait([fetchJudges(), fetchProgramsCache()]);
       return null;
@@ -330,6 +353,11 @@ class JudgeProvider extends ChangeNotifier {
 
   /// Reverses assignProgram: clears STATUS/ASSIGNED_TO on the program and
   /// removes the id from the judge's ASSIGNED_PROGRAM_IDS array.
+  ///
+  /// ⬅️ NEW: also reverts STATUS back to '' on this program's registrations
+  /// — but only the ones still sitting at 'Assigned'. Registrations that
+  /// already moved on to 'Resulted' or 'Published' are left as-is, since
+  /// unassigning shouldn't undo work a judge already did.
   Future<String?> unassignProgram(String judgeId, String programId) async {
     try {
       final batch = FirebaseFirestore.instance.batch();
@@ -340,6 +368,16 @@ class JudgeProvider extends ChangeNotifier {
       batch.update(_collection.doc(judgeId), {
         'ASSIGNED_PROGRAM_IDS': FieldValue.arrayRemove([programId]),
       });
+
+      final regSnap = await _registrationsCollection
+          .where('PROGRAM_ID', isEqualTo: programId)
+          .get();
+      for (final doc in regSnap.docs) {
+        final status = (doc.data()['STATUS'] ?? '').toString();
+        if (status != 'Assigned') continue;
+        batch.update(doc.reference, {'STATUS': ''});
+      }
+
       await batch.commit();
       await Future.wait([fetchJudges(), fetchProgramsCache()]);
       return null;
@@ -364,7 +402,26 @@ class JudgeProvider extends ChangeNotifier {
   final Map<String, bool> _savingScore = {};
   bool isSavingScore(String registrationId) => _savingScore[registrationId] ?? false;
 
-  int get submittedCount => registrations.where((r) => r.judged).length;
+  /// Registrations to actually show in the scoring list. For a General
+  /// program, several students from the same team can be registered under
+  /// the same PROGRAM_ID — only one card per team is shown in that case
+  /// (first occurrence wins). Non-general programs show every registration
+  /// as before.
+  List<RegistrationScore> get displayedRegistrations {
+    final program = selectedProgram;
+    if (program == null || !program.isGeneral) return registrations;
+
+    final seenTeamIds = <String>{};
+    final result = <RegistrationScore>[];
+    for (final r in registrations) {
+      if (seenTeamIds.add(r.teamId)) {
+        result.add(r);
+      }
+    }
+    return result;
+  }
+
+  int get submittedCount => displayedRegistrations.where((r) => r.judged).length;
 
   Future<void> fetchAssignedPrograms(String judgeId) async {
     if (judgeId.isEmpty) {
@@ -401,7 +458,12 @@ class JudgeProvider extends ChangeNotifier {
       final snap = await _registrationsCollection
           .where('PROGRAM_ID', isEqualTo: program.id)
           .get();
-      registrations = snap.docs.map(RegistrationScore.fromDoc).toList()
+      // ⬅️ NEW: once the admin has published a result, it's final — it
+      // no longer shows (or can be re-scored) in the judge panel.
+      registrations = snap.docs
+          .map(RegistrationScore.fromDoc)
+          .where((r) => r.status != 'Published')
+          .toList()
         ..sort((a, b) => a.registerNumber.compareTo(b.registerNumber));
     } catch (e) {
       registrationsError = 'Failed to load registrations: $e';

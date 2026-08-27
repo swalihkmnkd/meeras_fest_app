@@ -11,6 +11,7 @@ class StudentModel {
   final String teamName;
   final String teamColor;
   final String? registerNumber;
+  final String? photoUrl; // ⬅️ NEW: Firebase Storage download URL, if uploaded
 
   StudentModel({
     this.id = '',
@@ -23,6 +24,7 @@ class StudentModel {
     required this.teamName,
     required this.teamColor,
     required this.registerNumber,
+    this.photoUrl,
   });
 
   Map<String, dynamic> toMap() => {
@@ -35,6 +37,7 @@ class StudentModel {
     'TEAM_NAME': teamName,
     'TEAM_COLOR': teamColor,
     'REGISTER_NUMBER': registerNumber,
+    'PHOTO_URL': photoUrl,
   };
 
   bool get isAssigned => teamId.isNotEmpty;
@@ -52,6 +55,7 @@ class StudentModel {
       teamName: map['TEAM_NAME']?.toString() ?? '',
       teamColor: map['TEAM_COLOR']?.toString() ?? '',
       registerNumber: map['REGISTER_NUMBER']?.toString(),
+      photoUrl: map['PHOTO_URL']?.toString(),
     );
   }
 
@@ -66,6 +70,7 @@ class StudentModel {
     teamName: map['TEAM_NAME']?.toString() ?? '',
     teamColor: map['TEAM_COLOR']?.toString() ?? '',
     registerNumber: map['REGISTER_NUMBER']?.toString(),
+    photoUrl: map['PHOTO_URL']?.toString(),
   );
 
   StudentModel copyWith({
@@ -79,6 +84,7 @@ class StudentModel {
     String? teamName,
     String? teamColor,
     String? registerNumber,
+    String? photoUrl,
   }) {
     return StudentModel(
       id: id ?? this.id,
@@ -90,7 +96,8 @@ class StudentModel {
       teamId: teamId ?? this.teamId,
       teamName: teamName ?? this.teamName,
       teamColor: teamColor ?? this.teamColor,
-      registerNumber: registerNumber??this.registerNumber,
+      registerNumber: registerNumber ?? this.registerNumber,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

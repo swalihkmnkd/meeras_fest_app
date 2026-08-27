@@ -90,6 +90,8 @@ class _ProgramListView extends StatelessWidget {
                             _tag(program.studentCategory, const Color(0xFFFEF9C3)),
                           if (program.stageType.isNotEmpty)
                             _tag(program.stageType, const Color(0xFFFFEDD5)),
+                          if (program.isGeneral)
+                            _tag('General', const Color(0xFFDCFCE7)),
                         ],
                       ),
                     ),
@@ -123,7 +125,10 @@ class _ScoringView extends StatelessWidget {
   Widget build(BuildContext context) {
     final program = provider.selectedProgram!;
     final judgeId = context.read<ProfileProvider>().entityId ?? '';
-    final total = provider.registrations.length;
+    // ⬅️ CHANGED: use displayedRegistrations, which collapses a General
+    // program's multiple same-team registrations down to one card each.
+    final visibleRegistrations = provider.displayedRegistrations;
+    final total = visibleRegistrations.length;
 
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -201,15 +206,16 @@ class _ScoringView extends StatelessWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : provider.registrationsError != null
                 ? Center(child: Text(provider.registrationsError!))
-                : provider.registrations.isEmpty
+                : visibleRegistrations.isEmpty
                 ? const Center(
               child: Text("No students registered for this program.",
                   style: TextStyle(color: Colors.grey)),
             )
                 : ListView.builder(
-              itemCount: provider.registrations.length,
+              // ⬅️ CHANGED: iterate visibleRegistrations, not provider.registrations
+              itemCount: visibleRegistrations.length,
               itemBuilder: (context, index) {
-                final reg = provider.registrations[index];
+                final reg = visibleRegistrations[index];
                 return _StudentScoreCard(
                   reg: reg,
                   saving: provider.isSavingScore(reg.id),

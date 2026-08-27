@@ -95,10 +95,20 @@ class ResultProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final programsSnap = await _programsCollection.get();
-      // Only judged registrations have a RANK > 0 — unjudged ones have no
-      // RANK field at all, so this range query naturally excludes them.
-      final registrationsSnap =
-      await _registrationsCollection.where('RANK', isGreaterThan: 0).where("STATUS",isEqualTo: "Published").get();
+
+      // ⬅️ FIXED: only filter by STATUS in the Firestore query. The
+      // previous version also chained `.where('RANK', isGreaterThan: 0)`,
+      // which (a) requires a composite (STATUS, RANK) index — without one
+      // Firestore throws failed-precondition and this fetch fails outright
+      // — and (b) silently drops any doc where RANK isn't stored as a
+      // numeric type, since Firestore range filters don't coerce types.
+      // RANK is already parsed defensively below and filtered to > 0 in
+      // memory, so the Firestore-side range filter was both fragile and
+      // redundant. A single equality filter needs no composite index.
+      final registrationsSnap = await _registrationsCollection
+          .where('STATUS', isEqualTo: 'Published')
+          .get();
+
       final teamsSnap = await _teamsCollection.get();
 
       final teamNames = {
@@ -133,7 +143,7 @@ class ResultProvider extends ChangeNotifier {
         }).where((e) => e.rank > 0).toList()
           ..sort((a, b) => a.rank.compareTo(b.rank));
 
-        if (entries.isEmpty) continue;
+        if (entries.isEmpty) continue; // only unjudged / RANK<=0 entries — skip
 
         final programData = programDoc.data();
         results.add(ProgramResult(
@@ -147,6 +157,7 @@ class ResultProvider extends ChangeNotifier {
 
       results.sort((a, b) => a.programName.compareTo(b.programName));
       _allResults = results;
+      errorMessage = null;
     } catch (e) {
       errorMessage = 'Failed to load results: $e';
     } finally {

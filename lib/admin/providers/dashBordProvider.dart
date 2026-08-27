@@ -13,6 +13,15 @@ class DashboardProvider extends ChangeNotifier {
   int judgeCount = 0;
   int categoryCount = 0;
 
+  /// Registration counts split by Stage / Non Stage.
+  /// ⬅️ NEW: registrations where IS_GENERAL is true are excluded from both
+  /// counts — a General program isn't a normal per-student Stage/Non-Stage
+  /// slot, so it shouldn't inflate these totals. This needs the actual
+  /// documents (not an aggregate count()) since the exclusion depends on
+  /// a per-doc field combination that isn't worth a composite index for.
+  int stageRegistrationCount = 0;
+  int nonStageRegistrationCount = 0;
+
   Future<void> fetchCounts() async {
     isLoading = true;
     notifyListeners();
@@ -30,6 +39,23 @@ class DashboardProvider extends ChangeNotifier {
       teamCount = results[2].count ?? 0;
       judgeCount = results[3].count ?? 0;
       categoryCount = results[4].count ?? 0;
+
+      final regSnap = await _db.collection('REGISTRATIONS').get();
+      int stage = 0;
+      int nonStage = 0;
+      for (final doc in regSnap.docs) {
+        final data = doc.data();
+        if (data['IS_GENERAL'] == true) continue; // ⬅️ excluded, as requested
+        final stageType = (data['STAGE_TYPE'] ?? '').toString();
+        if (stageType == 'Stage') {
+          stage++;
+        } else if (stageType == 'Non Stage') {
+          nonStage++;
+        }
+      }
+      stageRegistrationCount = stage;
+      nonStageRegistrationCount = nonStage;
+
       errorMessage = null;
     } catch (e) {
       // Falls back to 0s if aggregate count() isn't available on the

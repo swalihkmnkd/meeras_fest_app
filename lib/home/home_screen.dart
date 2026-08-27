@@ -278,7 +278,76 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+
+                  /// ================= LIVE NOW =================
+                  /// Programs whose registrations currently have
+                  /// STATUS == 'Assigned' — i.e. on stage / being judged
+                  /// right now. Hidden entirely when nothing is live.
+                  Consumer<HomeStatsProvider>(
+                    builder: (context, stats, child) {
+                      if (stats.isLoading || stats.livePrograms.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return FadeSlideAnimation(
+                        order: 5,
+                        from: SlideFrom.left,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const _PulsingDot(),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Live Now",
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xff1F2937),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xffFEE2E2),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "${stats.livePrograms.length}",
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xffDC2626),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 108,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: stats.livePrograms.length,
+                                  itemBuilder: (context, index) {
+                                    final program = stats.livePrograms[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: _LiveProgramCard(program: program),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
 
                   /// ================= LATEST WINNERS =================
                   Row(
@@ -309,7 +378,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   FadeSlideAnimation(
-                    order: 5,
+                    order: 6,
                     from: SlideFrom.right,
                     child: Consumer<HomeStatsProvider>(
                       builder: (context, stats, child) {
@@ -423,7 +492,7 @@ class HomeScreen extends StatelessWidget {
 
                   /// ================= OVERALL STANDINGS (per category) =================
                   FadeSlideAnimation(
-                    order: 6,
+                    order: 7,
                     from: SlideFrom.bottom,
                     child: Consumer<HomeStatsProvider>(
                       builder: (context, stats, child) {
@@ -455,6 +524,8 @@ class HomeScreen extends StatelessWidget {
                         return Column(
                           children: categories.map((category) {
                             final teams = stats.standingsByCategory[category]!;
+                            final maxPoints = teams.fold<num>(
+                                0, (prev, t) => t.totalPoints > prev ? t.totalPoints : prev);
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Container(
@@ -508,6 +579,9 @@ class HomeScreen extends StatelessWidget {
                                         itemBuilder: (context, index) {
                                           final team = teams[index];
                                           final paletteIndex = index % _rankBgPalette.length;
+                                          final fraction = maxPoints > 0
+                                              ? (team.totalPoints / maxPoints).toDouble()
+                                              : 0.0;
                                           return Container(
                                             decoration: BoxDecoration(
                                               borderRadius: BorderRadius.circular(12),
@@ -515,54 +589,90 @@ class HomeScreen extends StatelessWidget {
                                             ),
                                             child: Padding(
                                               padding: const EdgeInsets.all(10),
-                                              child: Row(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  CircleAvatar(
-                                                    radius: 12,
-                                                    backgroundColor: _rankBgPalette[paletteIndex],
-                                                    child: Text(
-                                                      "${index + 1}",
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: _rankTextPalette[paletteIndex],
+                                                  Row(
+                                                    children: [
+                                                      CircleAvatar(
+                                                        radius: 12,
+                                                        backgroundColor: _rankBgPalette[paletteIndex],
+                                                        child: Text(
+                                                          "${index + 1}",
+                                                          style: GoogleFonts.inter(
+                                                            fontSize: 10,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: _rankTextPalette[paletteIndex],
+                                                          ),
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 9),
-                                                    child: CircleAvatar(
-                                                      radius: 3,
-                                                      backgroundColor: _dotPalette[paletteIndex],
-                                                    ),
-                                                  ),
-                                                  Expanded(
-                                                    child: Text(
-                                                      team.teamName,
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: const Color(0xff1F2937),
+                                                      Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 9),
+                                                        child: CircleAvatar(
+                                                          radius: 3,
+                                                          backgroundColor: _dotPalette[paletteIndex],
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(right: 6),
-                                                    child: Text(
-                                                      "${team.totalPoints}",
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xff667EEA),
+                                                      Expanded(
+                                                        child: Text(
+                                                          team.teamName,
+                                                          style: GoogleFonts.inter(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w600,
+                                                            color: const Color(0xff1F2937),
+                                                          ),
+                                                        ),
                                                       ),
-                                                    ),
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(right: 6),
+                                                        child: Text(
+                                                          "${team.totalPoints}",
+                                                          style: GoogleFonts.inter(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: const Color(0xff667EEA),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        "Pts",
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.w400,
+                                                          color: const Color(0xff9CA3AF),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  Text(
-                                                    "Pts",
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.w400,
-                                                      color: const Color(0xff9CA3AF),
+                                                  const SizedBox(height: 8),
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    child: Container(
+                                                      height: 6,
+                                                      color: const Color(0xffE5E7EB),
+                                                      child: TweenAnimationBuilder<double>(
+                                                        tween: Tween(begin: 0.0, end: fraction),
+                                                        duration: Duration(milliseconds: 600 + (index * 90)),
+                                                        curve: Curves.easeOutCubic,
+                                                        builder: (context, value, child) {
+                                                          return FractionallySizedBox(
+                                                            alignment: Alignment.centerLeft,
+                                                            widthFactor: value.clamp(0.0, 1.0),
+                                                            child: Container(
+                                                              decoration: BoxDecoration(
+                                                                borderRadius: BorderRadius.circular(6),
+                                                                gradient: LinearGradient(
+                                                                  colors: [
+                                                                    _dotPalette[paletteIndex],
+                                                                    _dotPalette[paletteIndex]
+                                                                        .withValues(alpha: 0.55),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
@@ -717,6 +827,151 @@ class _FestCarouselState extends State<_FestCarousel> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// A single "on stage now" card, used in the horizontal Live Now list.
+class _LiveProgramCard extends StatelessWidget {
+  final LiveProgramInfo program;
+  const _LiveProgramCard({required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 190,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xffFF6B6B), Color(0xffFF8E53)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xffFF6B6B).withValues(alpha: 0.25),
+            blurRadius: 14,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const _PulsingDot(color: Colors.white, size: 7),
+              const SizedBox(width: 6),
+              Text(
+                "LIVE",
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            program.programName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Row(
+            children: [
+              const Icon(Icons.groups_rounded, size: 14, color: Colors.white70),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  "${program.participantCount} on stage",
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small looping "radar" pulse dot used to signal live/on-air content.
+class _PulsingDot extends StatefulWidget {
+  final double size;
+  final Color color;
+  const _PulsingDot({this.size = 8, this.color = const Color(0xffEF4444)});
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value; // 0 -> 1
+        return SizedBox(
+          width: widget.size * 2.6,
+          height: widget.size * 2.6,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: (1 - t) * 0.5,
+                child: Container(
+                  width: widget.size * (1 + t * 1.6),
+                  height: widget.size * (1 + t * 1.6),
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
