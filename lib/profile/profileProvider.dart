@@ -16,7 +16,7 @@ class ProfileProvider extends ChangeNotifier {
   static const _kPassword = 'password';
   static const _kEntityId = 'judgesId';
 
-  String selectedRole = "User";
+  String selectedRole = "Guest";
   String loggedRole = "Guest";
   bool isLoggedIn = false;
   bool isLoggingIn = false;
@@ -68,7 +68,13 @@ class ProfileProvider extends ChangeNotifier {
 
   Future<String?> login() async {
     loginError = null;
-
+    print(selectedRole);
+if(selectedRole=='Guest'){
+  print("sssssssssssssssssss");
+  loginError = 'Select Role';
+  notifyListeners();
+  return loginError;
+}
     switch (selectedRole) {
       case "Leader":
         return _loginAsLeader();

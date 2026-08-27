@@ -7,6 +7,7 @@ import 'package:meeras_fest_app/home/home_provider.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:provider/provider.dart';
 
+import '../admin/animated_graph.dart';
 import '../admin/providers/curosel_provider.dart';
 import '../registration/register_provider.dart';
 import 'home_stats_provider.dart';
@@ -88,7 +89,7 @@ class HomeScreen extends StatelessWidget {
                     child: Container(
                       margin: const EdgeInsets.only(top: 8),
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24),
                         gradient: LinearGradient(
@@ -103,6 +104,19 @@ class HomeScreen extends StatelessWidget {
                       child: Center(
                         child: Column(
                           children: [
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => _confirmLogout(context),
+                                child: CircleAvatar(
+                                  backgroundColor: const Color(0xffffffff),
+                                  radius: 18,
+                                  child: Icon(Icons.login_rounded,
+                                      size: 18, color: const Color(0xff667EEA)),
+                                ),
+                              ),
+                            ),
                             Text(
                               "🎨 🎭 🎪 🎵",
                               style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
@@ -173,110 +187,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 18),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FadeSlideAnimation(
-                          order: 3,
-                          from: SlideFrom.bottom,
-                          child: Consumer<HomeProvider>(
-                            builder: (context, homePro, child) {
-                              return InkWell(
-                                borderRadius: BorderRadius.circular(16),
-                                onTap: () => homePro.changeBottomIndex(1),
-                                child: Container(
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.08),
-                                        blurRadius: 12,
-                                        spreadRadius: 1,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor: const Color(0xffFFEDD5),
-                                        radius: 18,
-                                        child: SvgPicture.asset(
-                                          "assets/icons/resultIcon.svg",
-                                          colorFilter: const ColorFilter.mode(
-                                              Color(0xffFF8E53), BlendMode.srcIn),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "Result",
-                                        style: GoogleFonts.inter(
-                                          color: const Color(0xff1F2937),
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 14,
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FadeSlideAnimation(
-                          order: 4,
-                          from: SlideFrom.bottom,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () => _confirmLogout(context),
-                            child: Container(
-                              height: 90,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: const Color(0xffF3E8FF),
-                                    radius: 18,
-                                    child: Icon(Icons.login_rounded,
-                                        size: 18, color: const Color(0xff667EEA)),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    "Logout",
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xff1F2937),
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
 
                   const SizedBox(height: 20),
 
@@ -574,7 +484,7 @@ class HomeScreen extends StatelessWidget {
                                       ListView.separated(
                                         shrinkWrap: true,
                                         physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: teams.length,
+                                        itemCount: 1,
                                         separatorBuilder: (context, index) => const SizedBox(height: 10),
                                         itemBuilder: (context, index) {
                                           final team = teams[index];
@@ -582,103 +492,115 @@ class HomeScreen extends StatelessWidget {
                                           final fraction = maxPoints > 0
                                               ? (team.totalPoints / maxPoints).toDouble()
                                               : 0.0;
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(12),
-                                              color: const Color(0xffF9FAFB),
-                                            ),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(10),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      CircleAvatar(
-                                                        radius: 12,
-                                                        backgroundColor: _rankBgPalette[paletteIndex],
-                                                        child: Text(
-                                                          "${index + 1}",
-                                                          style: GoogleFonts.inter(
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: _rankTextPalette[paletteIndex],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 9),
-                                                        child: CircleAvatar(
-                                                          radius: 3,
-                                                          backgroundColor: _dotPalette[paletteIndex],
-                                                        ),
-                                                      ),
-                                                      Expanded(
-                                                        child: Text(
-                                                          team.teamName,
-                                                          style: GoogleFonts.inter(
-                                                            fontSize: 11,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: const Color(0xff1F2937),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding: const EdgeInsets.only(right: 6),
-                                                        child: Text(
-                                                          "${team.totalPoints}",
-                                                          style: GoogleFonts.inter(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: const Color(0xff667EEA),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      Text(
-                                                        "Pts",
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.w400,
-                                                          color: const Color(0xff9CA3AF),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  ClipRRect(
-                                                    borderRadius: BorderRadius.circular(6),
-                                                    child: Container(
-                                                      height: 6,
-                                                      color: const Color(0xffE5E7EB),
-                                                      child: TweenAnimationBuilder<double>(
-                                                        tween: Tween(begin: 0.0, end: fraction),
-                                                        duration: Duration(milliseconds: 600 + (index * 90)),
-                                                        curve: Curves.easeOutCubic,
-                                                        builder: (context, value, child) {
-                                                          return FractionallySizedBox(
-                                                            alignment: Alignment.centerLeft,
-                                                            widthFactor: value.clamp(0.0, 1.0),
-                                                            child: Container(
-                                                              decoration: BoxDecoration(
-                                                                borderRadius: BorderRadius.circular(6),
-                                                                gradient: LinearGradient(
-                                                                  colors: [
-                                                                    _dotPalette[paletteIndex],
-                                                                    _dotPalette[paletteIndex]
-                                                                        .withValues(alpha: 0.55),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
+                                          return
+                                          //   Container(
+                                          //   decoration: BoxDecoration(
+                                          //     borderRadius: BorderRadius.circular(12),
+                                          //     color: const Color(0xffF9FAFB),
+                                          //   ),
+                                          //   child: Padding(
+                                          //     padding: const EdgeInsets.all(10),
+                                          //     child: Column(
+                                          //       crossAxisAlignment: CrossAxisAlignment.start,
+                                          //       children: [
+                                          //         Row(
+                                          //           children: [
+                                          //             CircleAvatar(
+                                          //               radius: 12,
+                                          //               backgroundColor: _rankBgPalette[paletteIndex],
+                                          //               child: Text(
+                                          //                 "${index + 1}",
+                                          //                 style: GoogleFonts.inter(
+                                          //                   fontSize: 10,
+                                          //                   fontWeight: FontWeight.w600,
+                                          //                   color: _rankTextPalette[paletteIndex],
+                                          //                 ),
+                                          //               ),
+                                          //             ),
+                                          //             Padding(
+                                          //               padding: const EdgeInsets.symmetric(horizontal: 9),
+                                          //               child: CircleAvatar(
+                                          //                 radius: 3,
+                                          //                 backgroundColor: _dotPalette[paletteIndex],
+                                          //               ),
+                                          //             ),
+                                          //             Expanded(
+                                          //               child: Text(
+                                          //                 team.teamName,
+                                          //                 style: GoogleFonts.inter(
+                                          //                   fontSize: 11,
+                                          //                   fontWeight: FontWeight.w600,
+                                          //                   color: const Color(0xff1F2937),
+                                          //                 ),
+                                          //               ),
+                                          //             ),
+                                          //             Padding(
+                                          //               padding: const EdgeInsets.only(right: 6),
+                                          //               child: Text(
+                                          //                 "${team.totalPoints}",
+                                          //                 style: GoogleFonts.inter(
+                                          //                   fontSize: 12,
+                                          //                   fontWeight: FontWeight.bold,
+                                          //                   color: const Color(0xff667EEA),
+                                          //                 ),
+                                          //               ),
+                                          //             ),
+                                          //             Text(
+                                          //               "Pts",
+                                          //               style: GoogleFonts.inter(
+                                          //                 fontSize: 10,
+                                          //                 fontWeight: FontWeight.w400,
+                                          //                 color: const Color(0xff9CA3AF),
+                                          //               ),
+                                          //             ),
+                                          //           ],
+                                          //         ),
+                                          //         const SizedBox(height: 8),
+                                          //         ClipRRect(
+                                          //           borderRadius: BorderRadius.circular(6),
+                                          //           child: Container(
+                                          //             height: 6,
+                                          //             color: const Color(0xffE5E7EB),
+                                          //             child: TweenAnimationBuilder<double>(
+                                          //               tween: Tween(begin: 0.0, end: fraction),
+                                          //               duration: Duration(milliseconds: 600 + (index * 90)),
+                                          //               curve: Curves.easeOutCubic,
+                                          //               builder: (context, value, child) {
+                                          //                 return FractionallySizedBox(
+                                          //                   alignment: Alignment.centerLeft,
+                                          //                   widthFactor: value.clamp(0.0, 1.0),
+                                          //                   child: Container(
+                                          //                     decoration: BoxDecoration(
+                                          //                       borderRadius: BorderRadius.circular(6),
+                                          //                       gradient: LinearGradient(
+                                          //                         colors: [
+                                          //                           _dotPalette[paletteIndex],
+                                          //                           _dotPalette[paletteIndex]
+                                          //                               .withValues(alpha: 0.55),
+                                          //                         ],
+                                          //                       ),
+                                          //                     ),
+                                          //                   ),
+                                          //                 );
+                                          //               },
+                                          //             ),
+                                          //           ),
+                                          //         ),
+                                          //       ],
+                                          //     ),
+                                          //   ),
+                                          // );
+                                            AnimatedBarGraph(
+                                              maxValue: maxPoints > 0 ? maxPoints.toDouble() : 1,
+                                              entries: teams
+                                                  .map((team) => BarGraphEntry(
+                                                teamName: team.teamName,
+                                                leaderName: team.leaderName,
+                                                points: team.totalPoints.toDouble(),
+                                                color: team.color,
+                                              ))
+                                                  .toList(),
+                                            );
                                         },
                                       ),
                                     ],
@@ -691,6 +613,7 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                   ),
+                  const SizedBox(height: 14),
 
                   const SizedBox(height: 12),
                 ],

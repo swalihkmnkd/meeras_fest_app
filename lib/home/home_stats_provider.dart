@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../admin/models/teamModel.dart';
+
 class WinnerEntry {
   final String programName;
   final String studentName;
@@ -20,15 +22,26 @@ class WinnerEntry {
 class TeamStanding {
   final String teamId;
   final String teamName;
+  final String leaderName;
+  final String colorName;
   final num totalPoints;
 
   TeamStanding({
     required this.teamId,
     required this.teamName,
+    required this.leaderName,
+    required this.colorName,
     required this.totalPoints,
   });
-}
 
+  Color get color {
+    final match = teamColorOptions.firstWhere(
+          (c) => c.name.toLowerCase() == colorName.toLowerCase(),
+      orElse: () => teamColorOptions.first,
+    );
+    return match.color;
+  }
+}
 /// A program that currently has registrations marked STATUS == 'Assigned',
 /// i.e. it's on stage / being judged right now.
 class LiveProgramInfo {
@@ -147,12 +160,10 @@ class HomeStatsProvider extends ChangeNotifier {
     }
 
     try {
-      // Team lookups, keyed by doc id AND by the TEAM_ID field (they're
-      // usually the same, but this covers both just in case).
       final teamNames = <String, String>{};
       final teamCategoryOf = <String, String>{};
-      // category -> teamId -> running point total, seeded to 0 for every
-      // team so categories always show their full roster.
+      final teamLeaderOf = <String, String>{};
+      final teamColorOf = <String, String>{};
       final pointsByCategory = <String, Map<String, num>>{};
 
       for (final doc in _teamDocs) {
@@ -160,12 +171,18 @@ class HomeStatsProvider extends ChangeNotifier {
         final name = (data['TEAM_NAME'] ?? '').toString();
         final category = (data['TEAM_CATEGORY'] ?? 'Other').toString();
         final teamIdField = (data['TEAM_ID'] ?? '').toString();
+        final leaderName = (data['TEAM_LEADER'] ?? '').toString();
+        final colorName = (data['TEAM_COLOR'] ?? '').toString();
 
         teamNames[doc.id] = name;
         teamCategoryOf[doc.id] = category;
+        teamLeaderOf[doc.id] = leaderName;
+        teamColorOf[doc.id] = colorName;
         if (teamIdField.isNotEmpty) {
           teamNames[teamIdField] = name;
           teamCategoryOf[teamIdField] = category;
+          teamLeaderOf[teamIdField] = leaderName;
+          teamColorOf[teamIdField] = colorName;
         }
 
         pointsByCategory.putIfAbsent(category, () => {});
@@ -257,6 +274,8 @@ class HomeStatsProvider extends ChangeNotifier {
             .map((e) => TeamStanding(
           teamId: e.key,
           teamName: teamNames[e.key] ?? e.key,
+          leaderName: teamLeaderOf[e.key] ?? '',
+          colorName: teamColorOf[e.key] ?? '',
           totalPoints: e.value,
         ))
             .toList()
