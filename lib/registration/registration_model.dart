@@ -8,12 +8,16 @@ class RegistrationModel {
   final String programId;
   final String programName;
   final String studentCategory;
-  final String programCategory; // the actual category name, e.g. "Senior" (from CATEGORIES.NAME)
+  final String programCategory; // e.g. "Senior" (from CATEGORIES.NAME)
   final String stageType; // "Stage" / "Non Stage"
   final bool isGeneral; // copied from ProgramModel.isGeneral at registration time
   final Timestamp? createdAt;
   final String registrationId;
   final String registrationNumber;
+
+  // ⬅️ NEW: the code letter assigned by the Stage Manager for this
+  // program (e.g. "A"). Empty string means "not assigned yet".
+  final String codeLetter;
 
   RegistrationModel({
     required this.id,
@@ -29,7 +33,10 @@ class RegistrationModel {
     this.createdAt,
     required this.registrationId,
     required this.registrationNumber,
+    this.codeLetter = '',
   });
+
+  bool get isAssigned => codeLetter.isNotEmpty;
 
   Map<String, dynamic> toMap() => {
     'STUDENT_ID': studentId,
@@ -42,8 +49,9 @@ class RegistrationModel {
     'STAGE_TYPE': stageType,
     'IS_GENERAL': isGeneral,
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-    'REGISTRATION_ID': registrationId ,
+    'REGISTRATION_ID': registrationId,
     'REGISTER_NUMBER': registrationNumber,
+    'CODE_LETTER': codeLetter, // ⬅️ NEW
   };
 
   factory RegistrationModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -67,6 +75,26 @@ class RegistrationModel {
       // back as false, which is a safe default.
       isGeneral: data['IS_GENERAL'] ?? false,
       createdAt: data['createdAt'],
+      codeLetter: (data['CODE_LETTER'] ?? '').toString(), // ⬅️ NEW
+    );
+  }
+
+  RegistrationModel copyWith({String? codeLetter}) {
+    return RegistrationModel(
+      id: id,
+      studentId: studentId,
+      studentName: studentName,
+      teamId: teamId,
+      programId: programId,
+      programName: programName,
+      studentCategory: studentCategory,
+      programCategory: programCategory,
+      stageType: stageType,
+      isGeneral: isGeneral,
+      createdAt: createdAt,
+      registrationId: registrationId,
+      registrationNumber: registrationNumber,
+      codeLetter: codeLetter ?? this.codeLetter,
     );
   }
 }

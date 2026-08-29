@@ -94,6 +94,7 @@ class RegistrationScore {
   bool judged;
   final String status; // '', 'Assigned', 'Resulted', 'Published'
   final TextEditingController controller;
+  final String codeLetter;
 
   RegistrationScore({
     required this.id,
@@ -108,6 +109,7 @@ class RegistrationScore {
     required this.totalPoint,
     required this.judged,
     required this.status,
+    required this.codeLetter,
   }) : controller = TextEditingController(text: judged ? score.toString() : '');
 
   factory RegistrationScore.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -126,6 +128,7 @@ class RegistrationScore {
       totalPoint: (data['POINT'] ?? 0) as num,
       judged: judged,
       status: (data['STATUS'] ?? '').toString(),
+      codeLetter: (data['CODE_LETTER'] ?? '').toString(),
     );
   }
 

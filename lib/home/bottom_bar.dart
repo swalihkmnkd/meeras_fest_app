@@ -11,19 +11,22 @@ import 'package:meeras_fest_app/registration/register_screen.dart';
 import 'package:meeras_fest_app/result/result_screen.dart';
 import 'package:provider/provider.dart';
 
+import '../stage_manager/stageManagerHomeScreen.dart';
+
 class BottomBar extends StatelessWidget {
   const BottomBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    var mainPages=[
+    var mainPages = [
       HomeScreen(),
       ResultScreen(),
       ProfileScreen(),
       AdminScreen(),
       RegisterScreen(),
       ListRegistrationScreen(),
-      JudgePanelPage()
+      JudgePanelPage(),
+      const StageManagerHomeScreen(), // ⬅️ NEW — index 7
     ];
 
     return Scaffold(
@@ -46,7 +49,7 @@ class BottomBar extends StatelessWidget {
           ),
         ),
         child: Consumer<ProfileProvider>(
-          builder: (context,profPro,child) {
+          builder: (context, profPro, child) {
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -60,45 +63,52 @@ class BottomBar extends StatelessWidget {
                   name: "Results",
                   index: 1,
                 ),
-                if(profPro.loggedRole=='User'||profPro.loggedRole=='Guest')
-                bottomItem(
-                  icon: "assets/icons/profileIcon.svg",
-                  name: "Profile",
-                  index: 2,
-                ),
-                if(profPro.loggedRole=='Admin')
-                bottomItem(
-                  icon: "assets/icons/adminDashIcon.svg",
-                  name: "Admin",
-                  index: 3,
-                ),
-                if(profPro.loggedRole=='Leader')
-                bottomItem(
-                  icon: "assets/icons/studentAddIcon.svg",
-                  name: "Register",
-                  index: 4,
-                ),
-                if(profPro.loggedRole=='Leader')
-                bottomItem(
-                  icon: "assets/icons/registerIcon.svg",
-                  name: "List",
-                  index: 5,
-                ),
-                if(profPro.loggedRole=='Judge')
-                bottomItem(
-                  icon: "assets/icons/registerIcon.svg",
-                  name: "Judge",
-                  index: 6,
-                ),
+                if (profPro.loggedRole == 'User' || profPro.loggedRole == 'Guest')
+                  bottomItem(
+                    icon: "assets/icons/profileIcon.svg",
+                    name: "Profile",
+                    index: 2,
+                  ),
+                if (profPro.loggedRole == 'Admin')
+                  bottomItem(
+                    icon: "assets/icons/adminDashIcon.svg",
+                    name: "Admin",
+                    index: 3,
+                  ),
+                if (profPro.loggedRole == 'Leader')
+                  bottomItem(
+                    icon: "assets/icons/studentAddIcon.svg",
+                    name: "Register",
+                    index: 4,
+                  ),
+                if (profPro.loggedRole == 'Leader')
+                  bottomItem(
+                    icon: "assets/icons/registerIcon.svg",
+                    name: "List",
+                    index: 5,
+                  ),
+                if (profPro.loggedRole == 'Judge')
+                  bottomItem(
+                    icon: "assets/icons/registerIcon.svg",
+                    name: "Judge",
+                    index: 6,
+                  ),
+                // ⬅️ NEW: Stage Manager gets its own tab -> Assignments screen
+                if (profPro.loggedRole == 'Stage Manager')
+                  bottomItem(
+                    icon: "assets/icons/registerIcon.svg", // ⚠️ swap for a dedicated icon if you have one
+                    name: "Assign",
+                    index: 7,
+                  ),
               ],
             );
-          }
+          },
         ),
       ),
       body: Consumer<HomeProvider>(
-        builder: (context,homePro,child) {
+        builder: (context, homePro, child) {
           return mainPages[homePro.selectedBottomIndex];
-        }
+        },
       ),
     );
   }
@@ -120,7 +130,7 @@ Widget bottomItem({
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 15.0,bottom:3),
+              padding: const EdgeInsets.only(top: 15.0, bottom: 3),
               child: SvgPicture.asset(
                 colorFilter: ColorFilter.mode(
                   isSelected ? Color(0xff667EEA) : Color(0xff9CA3AF),
@@ -140,14 +150,14 @@ Widget bottomItem({
             ),
             isSelected
                 ? Container(
-                    margin: EdgeInsets.only(top: 8),
-                    height: 3,
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: Color(0xff667EEA),
-                      shape: BoxShape.circle,
-                    ),
-                  )
+              margin: EdgeInsets.only(top: 8),
+              height: 3,
+              width: 3,
+              decoration: BoxDecoration(
+                color: Color(0xff667EEA),
+                shape: BoxShape.circle,
+              ),
+            )
                 : const SizedBox.shrink(),
           ],
         ),

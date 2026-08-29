@@ -271,11 +271,15 @@ class _StudentScoreCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(reg.studentName,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    Align(
+                      child: Text(reg.codeLetter??reg.studentName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    ),
                     const SizedBox(height: 2),
-                    Text("Reg #${reg.registerNumber} • Team ${reg.teamId}",
-                        style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    Align(
+                      child: Text("Reg #${reg.registerNumber}",
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ),
                   ],
                 ),
               ),

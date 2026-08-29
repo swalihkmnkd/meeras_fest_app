@@ -6,6 +6,7 @@ import 'package:meeras_fest_app/home/home_provider.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:meeras_fest_app/registration/register_provider.dart';
 import 'package:meeras_fest_app/result/resultProvider.dart';
+import 'package:meeras_fest_app/stage_manager/stageManagerProvider.dart';
 import 'package:provider/provider.dart';
 
 import 'admin/providers/curosel_provider.dart';
@@ -34,6 +35,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ScoreCalculatorProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => CarouselProvider()),
+        ChangeNotifierProvider(create: (_) => StageManagerProvider()),
         // Add more providers here
       ],
       child: const MyApp(),

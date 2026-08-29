@@ -63,13 +63,16 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   const Text("Sign in to access your account", style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 20),
-              
+
                   // Role Selector
                   Consumer<ProfileProvider>(
                     builder: (context, profilePro, child) {
+                      // ⬅️ CHANGED: added "Stage Manager" so it can log in
+                      // via the same username/password flow as Admin/Judge.
                       return Wrap(
                         spacing: 10,
-                        children: [ "Leader", "Judge", "Admin"].map((role) {
+                        runSpacing: 8,
+                        children: ["Leader", "Judge", "Admin", "Stage Manager"].map((role) {
                           final selected = profilePro.selectedRole == role;
                           return InkWell(
                             onTap: () => profilePro.changeRole(role),
@@ -96,9 +99,9 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-              
+
                   const SizedBox(height: 20),
-              
+
                   // Email / Username
                   Consumer<ProfileProvider>(
                     builder: (context, profPro, child) => TextField(
@@ -124,9 +127,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-              
+
                   const SizedBox(height: 12),
-              
+
                   // Password
                   Consumer<ProfileProvider>(
                     builder: (context, profPro, child) => TextField(
@@ -153,7 +156,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-              
+
                   // Inline error
                   Consumer<ProfileProvider>(
                     builder: (context, profPro, child) {
@@ -167,9 +170,9 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-              
+
                   const SizedBox(height: 20),
-              
+
                   // Sign In Button
                   Consumer<ProfileProvider>(
                     builder: (context, profPro, child) {
@@ -204,9 +207,9 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-              
+
                   const SizedBox(height: 12),
-              
+
                   TextButton(
                     onPressed: () {},
                     child: const Text("Continue as Guest", style: TextStyle(color: Colors.grey)),

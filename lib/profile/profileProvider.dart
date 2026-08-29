@@ -6,6 +6,9 @@ class ProfileProvider extends ChangeNotifier {
   final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS');
   final _adminsCollection = FirebaseFirestore.instance.collection('Admins');
   final _judgesCollection = FirebaseFirestore.instance.collection('judges');
+  // ⬅️ NEW: Stage Manager logins are now real Firestore docs (managed from
+  // the admin's Stage Managers page) instead of a single fixed password.
+  final _stageManagersCollection = FirebaseFirestore.instance.collection('StageManagers');
 
   static const _kLoggedRole = 'loggedRole';
   static const _kTeamId = 'teamId';
@@ -15,6 +18,7 @@ class ProfileProvider extends ChangeNotifier {
   static const _kUserName = 'userName';
   static const _kPassword = 'password';
   static const _kEntityId = 'judgesId';
+  static const _kDisplayName = 'displayName'; // ⬅️ NEW
 
   String selectedRole = "Guest";
   String loggedRole = "Guest";
@@ -29,9 +33,10 @@ class ProfileProvider extends ChangeNotifier {
   String? teamLeader;
   String? teamCategory;
 
-  // Admin / Judge session info
+  // Admin / Judge / Stage Manager session info
   String? userName;
   String? entityId;
+  String? displayName; // ⬅️ NEW: the NAME field from Admins/judges/StageManagers docs, when present
 
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
@@ -60,6 +65,7 @@ class ProfileProvider extends ChangeNotifier {
       teamLeader = prefs.getString(_kTeamLeader);
       teamCategory = prefs.getString(_kTeamCategory);
       userName = prefs.getString(_kUserName);
+      displayName = prefs.getString(_kDisplayName); // ⬅️ NEW
     }
 
     isRestoring = false;
@@ -69,12 +75,12 @@ class ProfileProvider extends ChangeNotifier {
   Future<String?> login() async {
     loginError = null;
     print(selectedRole);
-if(selectedRole=='Guest'){
-  print("sssssssssssssssssss");
-  loginError = 'Select Role';
-  notifyListeners();
-  return loginError;
-}
+    if(selectedRole=='Guest'){
+      print("sssssssssssssssssss");
+      loginError = 'Select Role';
+      notifyListeners();
+      return loginError;
+    }
     switch (selectedRole) {
       case "Leader":
         return _loginAsLeader();
@@ -88,6 +94,11 @@ if(selectedRole=='Guest'){
           collection: _judgesCollection,
           role: 'Judge',
         );
+      case "Stage Manager": // ⬅️ CHANGED: now a real collection lookup, same as Admin/Judge
+        return _loginWithCollection(
+          collection: _stageManagersCollection,
+          role: 'Stage Manager',
+        );
       default:
       // "User" / other roles: no credential check for now, just mark as logged in.
         loggedRole = selectedRole;
@@ -99,9 +110,10 @@ if(selectedRole=='Guest'){
     }
   }
 
-  /// Shared logic for Admin & Judge: match USER_NAME + PASSWORD against
-  /// the given Firestore collection, then persist role + username +
-  /// password to SharedPreferences.
+  /// Shared logic for Admin, Judge & Stage Manager: match USER_NAME +
+  /// PASSWORD against the given Firestore collection, then persist role +
+  /// username + password (+ display name, if the doc has one) to
+  /// SharedPreferences.
   Future<String?> _loginWithCollection({
     required CollectionReference<Map<String, dynamic>> collection,
     required String role,
@@ -140,13 +152,15 @@ if(selectedRole=='Guest'){
       loggedRole = role;
       isLoggedIn = true;
       userName = username;
-      entityId = doc.id; // the judge's / admin's own Firestore doc id
+      entityId = doc.id; // the admin's / judge's / stage manager's own Firestore doc id
+      displayName = (data['NAME'] ?? '').toString(); // ⬅️ NEW: e.g. StageManagers.NAME
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kLoggedRole, role);
       await prefs.setString(_kUserName, username);
       await prefs.setString(_kPassword, password);
       await prefs.setString(_kEntityId, doc.id);
+      await prefs.setString(_kDisplayName, displayName ?? ''); // ⬅️ NEW
 
       emailCtrl.clear();
       passwordCtrl.clear();
@@ -231,6 +245,7 @@ if(selectedRole=='Guest'){
     teamLeader = null;
     teamCategory = null;
     userName = null;
+    displayName = null; // ⬅️ NEW
     notifyListeners();
   }
 

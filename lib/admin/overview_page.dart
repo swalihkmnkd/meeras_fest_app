@@ -3,6 +3,8 @@ import 'package:meeras_fest_app/admin/providers/curosel_provider.dart';
 import 'package:meeras_fest_app/admin/providers/resultProvider.dart';
 import 'package:meeras_fest_app/admin/registration_setting_page.dart';
 import 'package:meeras_fest_app/admin/resultReviewPage.dart';
+import 'package:meeras_fest_app/stage_manager/stageManagerAdminProvider.dart';
+import 'package:meeras_fest_app/stage_manager/stageManagerListPage.dart';
 import 'package:provider/provider.dart';
 
 import 'adminWidgets.dart';
@@ -24,6 +26,13 @@ class OverviewPage extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DashboardProvider()..fetchCounts()),
         ChangeNotifierProvider(create: (_) => CarouselProvider()),
         ChangeNotifierProvider(create: (_) => ResultsPublishProvider()..fetchPending()),
+        // ⬅️ NEW: kept self-contained (own fetch, own count) rather than
+        // wired into DashboardProvider, so this card doesn't require
+        // touching that file too.
+        ChangeNotifierProvider(create: (_) => StageManagerAdminProvider()..fetchAll()),
+        // ⬅️ NEW: same pattern — Stage Manager card gets its own provider
+        // instance here just to show a live count; StageManagersListPage
+        // fetches its own separate copy when opened.
       ],
       child: const _OverviewView(),
     );
@@ -35,8 +44,8 @@ class _OverviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DashboardProvider, ResultsPublishProvider>(
-      builder: (context, dashboard, results, child) {
+    return Consumer3<DashboardProvider, ResultsPublishProvider, StageManagerAdminProvider>(
+      builder: (context, dashboard, results, stageManagers, child) {
         return SizedBox(
           child: Column(
             children: [
@@ -124,6 +133,19 @@ class _OverviewView extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const RegistrationSettingsPage()),
+                    ),
+                  ),
+                  // ⬅️ NEW: manage Stage Manager logins (name, username,
+                  // password) — add/edit/delete lives on StageManagersListPage.
+                  AdminActionCard(
+                    count: stageManagers.stageManagers.length.toString(),
+                    title: "Stage Manager",
+                    subtitle: "Add & manage logins",
+                    icon: Icons.record_voice_over_rounded,
+                    color: const Color(0xFFDB2777),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const StageManagersListPage()),
                     ),
                   ),
                 ],
