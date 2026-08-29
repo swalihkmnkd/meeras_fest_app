@@ -127,7 +127,7 @@ class _OverviewView extends StatelessWidget {
                   AdminActionCard(
                     count: '${dashboard.stageRegistrationCount + dashboard.nonStageRegistrationCount}',
                     title: "Registration Limits",
-                    subtitle: "Set Stage :${dashboard.stageRegistrationCount} / Non Stage :${dashboard.nonStageRegistrationCount}",
+                    subtitle: "Stage:${dashboard.stageRegistrationCount} / Non Stage:${dashboard.nonStageRegistrationCount}",
                     icon: Icons.rule_rounded,
                     color: const Color(0xFF0EA5E9),
                     onTap: () => Navigator.push(

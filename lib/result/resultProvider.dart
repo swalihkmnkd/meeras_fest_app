@@ -7,12 +7,14 @@ class RankedEntry {
   final String teamName;
   final int rank;
   final num points;
+  final String studentCategory; // STUDENT_CATEGORY, e.g. "Sub Junior" / "Senior"
 
   RankedEntry({
     required this.studentName,
     required this.teamName,
     required this.rank,
     required this.points,
+    required this.studentCategory,
   });
 }
 
@@ -31,6 +33,17 @@ class ProgramResult {
     required this.stageType,
     required this.topEntries,
   });
+
+  /// Returns a copy with a different set of entries — used when the
+  /// student-category filter narrows down which entries are shown for
+  /// this program without needing to re-fetch or mutate the original.
+  ProgramResult withEntries(List<RankedEntry> entries) => ProgramResult(
+    programId: programId,
+    programName: programName,
+    category: category,
+    stageType: stageType,
+    topEntries: entries,
+  );
 }
 
 class ResultProvider extends ChangeNotifier {
@@ -46,6 +59,7 @@ class ResultProvider extends ChangeNotifier {
   // ---- Filters ----
   String? selectedProgramName;
   String? selectedCategory;
+  String? selectedStudentCategory;
   String? selectedStageType;
 
   List<String> get programNameOptions =>
@@ -55,17 +69,41 @@ class ResultProvider extends ChangeNotifier {
   List<String> get stageTypeOptions =>
       (_allResults.map((r) => r.stageType).where((s) => s.isNotEmpty).toSet().toList()..sort());
 
+  /// Student category lives on each ranked entry, not the program, so this
+  /// is flattened across every program's entries rather than read straight
+  /// off _allResults like the program-level option lists above.
+  List<String> get studentCategoryOptions => (_allResults
+      .expand((r) => r.topEntries)
+      .map((e) => e.studentCategory)
+      .where((c) => c.isNotEmpty)
+      .toSet()
+      .toList()
+    ..sort());
+
   /// Results after applying whichever filters are currently set. Any
-  /// combination of the three can be active at once — all must match.
+  /// combination can be active at once — all must match.
+  ///
+  /// programName / category / stageType are program-level, so they simply
+  /// keep or drop a whole ProgramResult. studentCategory is entry-level:
+  /// it narrows each program's topEntries down to matching entries, and
+  /// the program itself is dropped only if none of its entries match.
   List<ProgramResult> get results => _allResults.where((r) {
     if (selectedProgramName != null && r.programName != selectedProgramName) return false;
     if (selectedCategory != null && r.category != selectedCategory) return false;
     if (selectedStageType != null && r.stageType != selectedStageType) return false;
     return true;
-  }).toList();
+  }).map((r) {
+    if (selectedStudentCategory == null) return r;
+    final filteredEntries =
+    r.topEntries.where((e) => e.studentCategory == selectedStudentCategory).toList();
+    return r.withEntries(filteredEntries);
+  }).where((r) => r.topEntries.isNotEmpty).toList();
 
   bool get hasActiveFilters =>
-      selectedProgramName != null || selectedCategory != null || selectedStageType != null;
+      selectedProgramName != null ||
+          selectedCategory != null ||
+          selectedStudentCategory != null ||
+          selectedStageType != null;
 
   void setProgramNameFilter(String? name) {
     selectedProgramName = name;
@@ -77,6 +115,11 @@ class ResultProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setStudentCategoryFilter(String? studentCategory) {
+    selectedStudentCategory = studentCategory;
+    notifyListeners();
+  }
+
   void setStageTypeFilter(String? stageType) {
     selectedStageType = stageType;
     notifyListeners();
@@ -85,6 +128,7 @@ class ResultProvider extends ChangeNotifier {
   void clearFilters() {
     selectedProgramName = null;
     selectedCategory = null;
+    selectedStudentCategory = null;
     selectedStageType = null;
     notifyListeners();
   }
@@ -139,6 +183,7 @@ class ResultProvider extends ChangeNotifier {
             teamName: teamNames[teamId] ?? teamId,
             rank: rank,
             points: (data['POINT'] ?? 0) as num,
+            studentCategory: (data['STUDENT_CATEGORY'] ?? '').toString(),
           );
         }).where((e) => e.rank > 0).toList()
           ..sort((a, b) => a.rank.compareTo(b.rank));

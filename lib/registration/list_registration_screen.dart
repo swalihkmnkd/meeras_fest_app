@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:meeras_fest_app/profile/profileProvider.dart';
 import 'package:meeras_fest_app/registration/register_provider.dart';
+import 'package:meeras_fest_app/registration/registration_model.dart';
+import 'package:meeras_fest_app/registration/student_details_screen.dart';
+import 'package:meeras_fest_app/registration/student_id_pdf.dart';
 import 'package:provider/provider.dart';
 
 class ListRegistrationScreen extends StatelessWidget {
@@ -32,9 +35,40 @@ class ListRegistrationScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _handlePrintAll(
+      BuildContext context,
+      RegistrationProvider provider,
+      String teamName,
+      ) async {
+    final groups = provider.studentWiseGroups;
+    if (groups.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No students to print')));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await StudentIdCardPdf.printAll(groups: groups, teamName: teamName);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to generate PDF: $e')));
+      }
+    } finally {
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final teamId = context.watch<ProfileProvider>().teamId;
+    final teamName = context.watch<ProfileProvider>().teamName ?? '';
     if (teamId != null) {
       context.read<RegistrationProvider>().loadForTeam(teamId);
     }
@@ -50,15 +84,31 @@ class ListRegistrationScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 30),
-              const Padding(
-                padding: EdgeInsets.only(left: 12.0),
-                child: Text("Registrations",
-                    style: TextStyle(color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 18)),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 12.0),
-                child: Text("View and manage your team's entries",
-                    style: TextStyle(color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12)),
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Registrations",
+                              style: TextStyle(
+                                  color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 18)),
+                          Text("View and manage your team's entries",
+                              style: TextStyle(
+                                  color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Print all student ID cards',
+                      icon: const Icon(Icons.print_outlined, color: Color(0xff667EEA)),
+                      onPressed: () => _handlePrintAll(context, provider, teamName),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
 
@@ -99,7 +149,7 @@ class ListRegistrationScreen extends StatelessWidget {
 
               Expanded(
                 child: provider.viewMode == RegistrationViewMode.student
-                    ? _StudentWiseList(provider: provider)
+                    ? _StudentWiseList(provider: provider, teamName: teamName)
                     : _ProgramWiseList(
                   provider: provider,
                   categoryColor: _categoryColor,
@@ -269,9 +319,11 @@ class _FilterChipRow extends StatelessWidget {
 /// Each student appears once, with their programs bucketed into
 /// Stage / Non Stage / General underneath, plus a tappable avatar to
 /// upload/replace the student's photo (stored in Firebase Storage).
+/// Tapping anywhere else on the card opens the full-screen student detail.
 class _StudentWiseList extends StatelessWidget {
   final RegistrationProvider provider;
-  const _StudentWiseList({required this.provider});
+  final String teamName;
+  const _StudentWiseList({required this.provider, required this.teamName});
 
   @override
   Widget build(BuildContext context) {
@@ -285,7 +337,7 @@ class _StudentWiseList extends StatelessWidget {
       itemCount: groups.length,
       itemBuilder: (context, index) {
         final group = groups[index];
-        return _StudentGroupCard(provider: provider, group: group);
+        return _StudentGroupCard(provider: provider, group: group, teamName: teamName);
       },
     );
   }
@@ -294,13 +346,62 @@ class _StudentWiseList extends StatelessWidget {
 class _StudentGroupCard extends StatelessWidget {
   final RegistrationProvider provider;
   final StudentRegistrationGroup group;
-  const _StudentGroupCard({required this.provider, required this.group});
+  final String teamName;
+  const _StudentGroupCard({required this.provider, required this.group, required this.teamName});
 
   Future<void> _handleUpload(BuildContext context) async {
     final error = await provider.uploadStudentPhoto(group.studentId);
     if (error != null && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
     }
+  }
+  Future<bool> _confirmDeleteRegistration(BuildContext context, String label) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove registration?'),
+        content: Text('Remove $label from this program? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _deleteRegistration(
+      BuildContext context,
+      RegistrationProvider provider,
+      RegistrationModel registration,
+      ) async {
+    final confirmed = await _confirmDeleteRegistration(
+      context,
+      '${registration.studentName} — ${registration.programName}',
+    );
+    if (!confirmed) return;
+
+    final error = await provider.deleteRegistration(registration);
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Registration removed')));
+    }
+  }
+  void _openDetail(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StudentDetailScreen(group: group, teamName: teamName),
+      ),
+    );
   }
 
   @override
@@ -310,7 +411,6 @@ class _StudentGroupCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -322,107 +422,124 @@ class _StudentGroupCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: const Color(0xffF3F4F6),
-                    backgroundImage: hasPhoto ? NetworkImage(group.photoUrl!) : null,
-                    child: !hasPhoto
-                        ? Text(
-                      group.studentName.isNotEmpty ? group.studentName[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                          color: Color(0xff6B7280), fontWeight: FontWeight.bold, fontSize: 16),
-                    )
-                        : null,
-                  ),
-                  if (progress != null)
-                    Positioned.fill(
-                      child: Padding(
-                        padding: const EdgeInsets.all(1.5),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          value: progress > 0 ? progress : null,
-                          color: const Color(0xff667EEA),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: InkWell(
-                      onTap: progress != null ? null : () => _handleUpload(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xff667EEA),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(Icons.camera_alt_rounded, size: 11, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _openDetail(context),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(group.studentName,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xff1F2937))),
-                    const SizedBox(height: 2),
-                    Text('ID: ${group.registrationNumber}',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: const Color(0xffF3F4F6),
+                          backgroundImage: hasPhoto ? NetworkImage(group.photoUrl!) : null,
+                          child: !hasPhoto
+                              ? Text(
+                            group.studentName.isNotEmpty ? group.studentName[0].toUpperCase() : '?',
+                            style: const TextStyle(
+                                color: Color(0xff6B7280), fontWeight: FontWeight.bold, fontSize: 16),
+                          )
+                              : null,
+                        ),
+                        if (progress != null)
+                          Positioned.fill(
+                            child: Padding(
+                              padding: const EdgeInsets.all(1.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
+                                value: progress > 0 ? progress : null,
+                                color: const Color(0xff667EEA),
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          bottom: -2,
+                          right: -2,
+                          child: InkWell(
+                            onTap: progress != null ? null : () => _handleUpload(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xff667EEA),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded, size: 11, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(group.studentName,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xff1F2937))),
+                          const SizedBox(height: 2),
+                          Text('ID: ${group.registrationNumber}',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffF3F4F6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${group.totalPrograms} programs',
+                          style: const TextStyle(fontSize: 10, color: Color(0xff6B7280), fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xff9CA3AF)),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xffF3F4F6),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('${group.totalPrograms} programs',
-                    style: const TextStyle(fontSize: 10, color: Color(0xff6B7280), fontWeight: FontWeight.w600)),
-              ),
-            ],
+                if (group.stagePrograms.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _ProgramTypeSection(
+                    label: 'Stage',
+                    registrations: group.stagePrograms,
+                    bg: const Color(0xFFFFEDD5),
+                    fg: const Color(0xFFC2410C),
+                    onDelete: (r) => _deleteRegistration(context, provider, r),
+                  ),
+                ],
+                if (group.nonStagePrograms.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _ProgramTypeSection(
+                    label: 'Non Stage',
+                    registrations: group.nonStagePrograms,
+                    bg: const Color(0xFFDBEAFE),
+                    fg: const Color(0xFF1D4ED8),
+                    onDelete: (r) => _deleteRegistration(context, provider, r),
+                  ),
+                ],
+                if (group.generalPrograms.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _ProgramTypeSection(
+                    label: 'General',
+                    registrations: group.generalPrograms,
+                    bg: const Color(0xFFDCFCE7),
+                    fg: const Color(0xFF15803D),
+                    onDelete: (r) => _deleteRegistration(context, provider, r),
+                  ),
+                ],
+
+              ],
+            ),
           ),
-          if (group.stagePrograms.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _ProgramTypeSection(
-              label: 'Stage',
-              programNames: group.stagePrograms.map((r) => r.programName).toList(),
-              bg: const Color(0xFFFFEDD5),
-              fg: const Color(0xFFC2410C),
-            ),
-          ],
-          if (group.nonStagePrograms.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _ProgramTypeSection(
-              label: 'Non Stage',
-              programNames: group.nonStagePrograms.map((r) => r.programName).toList(),
-              bg: const Color(0xFFDBEAFE),
-              fg: const Color(0xFF1D4ED8),
-            ),
-          ],
-          if (group.generalPrograms.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _ProgramTypeSection(
-              label: 'General',
-              programNames: group.generalPrograms.map((r) => r.programName).toList(),
-              bg: const Color(0xFFDCFCE7),
-              fg: const Color(0xFF15803D),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -430,15 +547,17 @@ class _StudentGroupCard extends StatelessWidget {
 
 class _ProgramTypeSection extends StatelessWidget {
   final String label;
-  final List<String> programNames;
+  final List<RegistrationModel> registrations;
   final Color bg;
   final Color fg;
+  final void Function(RegistrationModel) onDelete;
 
   const _ProgramTypeSection({
     required this.label,
-    required this.programNames,
+    required this.registrations,
     required this.bg,
     required this.fg,
+    required this.onDelete,
   });
 
   @override
@@ -452,14 +571,29 @@ class _ProgramTypeSection extends StatelessWidget {
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: programNames
-              .map((name) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          children: registrations
+              .map((r) => Container(
+            padding: const EdgeInsets.only(left: 10, right: 4, top: 5, bottom: 5),
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(name, style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(r.programName,
+                    style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500)),
+                const SizedBox(width: 2),
+                InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => onDelete(r),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Icon(Icons.close_rounded, size: 13, color: fg),
+                  ),
+                ),
+              ],
+            ),
           ))
               .toList(),
         ),
@@ -481,7 +615,47 @@ class _ProgramWiseList extends StatelessWidget {
     required this.categoryColor,
     required this.categoryTextColor,
   });
+  Future<bool> _confirmDeleteRegistration(BuildContext context, String label) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove registration?'),
+        content: Text('Remove $label from this program? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
 
+  Future<void> _deleteRegistration(
+      BuildContext context,
+      RegistrationProvider provider,
+      RegistrationModel registration,
+      ) async {
+    final confirmed = await _confirmDeleteRegistration(
+      context,
+      '${registration.studentName} — ${registration.programName}',
+    );
+    if (!confirmed) return;
+
+    final error = await provider.deleteRegistration(registration);
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Registration removed')));
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final groups = provider.programWiseGroups;
@@ -554,6 +728,15 @@ class _ProgramWiseList extends StatelessWidget {
                     ),
                     Text('ID: ${r.registrationNumber}',
                         style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => _deleteRegistration(context, provider, r),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xffEF4444)),
+                      ),
+                    ),
                   ],
                 ),
               )),

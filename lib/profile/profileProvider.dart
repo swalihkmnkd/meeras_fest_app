@@ -66,6 +66,14 @@ class ProfileProvider extends ChangeNotifier {
       teamCategory = prefs.getString(_kTeamCategory);
       userName = prefs.getString(_kUserName);
       displayName = prefs.getString(_kDisplayName); // ⬅️ NEW
+      // ⬅️ FIXED: entityId was saved to prefs on login (_kEntityId /
+      // 'judgesId') but never read back here, so after every app restart
+      // it stayed null for Admin/Judge/Stage Manager sessions even though
+      // isLoggedIn was correctly restored. Anything keyed off entityId —
+      // e.g. JudgeProvider.fetchAssignedPrograms — then failed with
+      // "No judge id found — please log in again." despite the person
+      // still being logged in. Restoring it here fixes that.
+      entityId = prefs.getString(_kEntityId);
     }
 
     isRestoring = false;

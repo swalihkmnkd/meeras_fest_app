@@ -410,7 +410,24 @@ class RegistrationProvider extends ChangeNotifier {
     notifyListeners();
     return null;
   }
+  /// Deletes a single registration document from Firestore and refreshes
+  /// the local cache. [registration] must be one already persisted
+  /// (i.e. its `id` is the real Firestore document id, not a pending entry).
+  Future<String?> deleteRegistration(RegistrationModel registration) async {
+    if (registration.id.isEmpty) {
+      return 'This registration has not been submitted yet';
+    }
 
+    try {
+      await _registrationsCollection.doc(registration.id).delete();
+      await _refreshRegistrations();
+      expandedIndex = -1;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return 'Failed to delete registration: $e';
+    }
+  }
   void removePending(int index) {
     pendingEntries.removeAt(index);
     notifyListeners();

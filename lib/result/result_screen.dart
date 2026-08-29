@@ -79,7 +79,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
           const SizedBox(height: 18),
 
-          // ---------- Filter row: Program Name / Category / Stage Type ----------
+          // ---------- Filter row: Program Name / Category / Student Category / Stage Type ----------
           Consumer<ResultProvider>(
             builder: (context, resultPro, child) {
               return Padding(
@@ -100,6 +100,12 @@ class _ResultScreenState extends State<ResultScreen> {
                       value: resultPro.selectedCategory,
                       options: resultPro.categoryOptions,
                       onChanged: resultPro.setCategoryFilter,
+                    ),
+                    _FilterPill(
+                      label: 'Student Category',
+                      value: resultPro.selectedStudentCategory,
+                      options: resultPro.studentCategoryOptions,
+                      onChanged: resultPro.setStudentCategoryFilter,
                     ),
                     _FilterPill(
                       label: 'Stage Type',
@@ -298,8 +304,8 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 }
 
-/// A dropdown styled as a rounded pill, used for each of the three
-/// independent result filters (Program / Category / Stage Type).
+/// A dropdown styled as a rounded pill, used for each of the independent
+/// result filters (Program / Category / Student Category / Stage Type).
 class _FilterPill extends StatelessWidget {
   final String label;
   final String? value;

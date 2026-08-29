@@ -26,7 +26,7 @@ class BottomBar extends StatelessWidget {
       RegisterScreen(),
       ListRegistrationScreen(),
       JudgePanelPage(),
-      const StageManagerHomeScreen(), // ⬅️ NEW — index 7
+      const StageManagerAssignmentsPage (), // ⬅️ NEW — index 7
     ];
 
     return Scaffold(
