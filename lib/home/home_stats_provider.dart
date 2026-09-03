@@ -10,12 +10,14 @@ class WinnerEntry {
   final String studentName;
   final String teamName;
   final DateTime? judgedAt;
+  final String photoUrl;
 
   WinnerEntry({
     required this.programName,
     required this.studentName,
     required this.teamName,
     required this.judgedAt,
+    required this.photoUrl,
   });
 }
 
@@ -61,6 +63,7 @@ class LiveProgramInfo {
 class HomeStatsProvider extends ChangeNotifier {
   final _registrationsCollection = FirebaseFirestore.instance.collection('REGISTRATIONS');
   final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS');
+  final _studentsCollection = FirebaseFirestore.instance.collection('STUDENTS');
 
   bool isLoading = true;
   String? errorMessage;
@@ -84,21 +87,25 @@ class HomeStatsProvider extends ChangeNotifier {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _teamsSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _publishedSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _assignedSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _studentsSub;
 
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _teamDocs = [];
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _publishedDocs = [];
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _assignedDocs = [];
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _studentDocs = [];
 
   bool _teamsLoaded = false;
   bool _publishedLoaded = false;
   bool _assignedLoaded = false;
+  bool _studentsLoaded = false;
   bool _listening = false;
 
-  /// Starts real-time listeners on TEAMS and on REGISTRATIONS (split into
-  /// the 'Published' and 'Assigned' STATUS queries). Every listener
-  /// re-runs [_recompute] on any change, so latestWinners, livePrograms,
-  /// and standingsByCategory all stay in sync with Firestore instantly —
-  /// no manual re-fetching required anywhere this provider is used.
+  /// Starts real-time listeners on TEAMS, STUDENTS, and on REGISTRATIONS
+  /// (split into the 'Published' and 'Assigned' STATUS queries). Every
+  /// listener re-runs [_recompute] on any change, so latestWinners,
+  /// livePrograms, and standingsByCategory all stay in sync with Firestore
+  /// instantly — no manual re-fetching required anywhere this provider is
+  /// used.
   ///
   /// Safe to call more than once (e.g. if a widget rebuilds); listeners
   /// are only ever set up a single time per provider instance.
@@ -117,6 +124,16 @@ class HomeStatsProvider extends ChangeNotifier {
     }, onError: (e) {
       errorMessage = 'Failed to load teams: $e';
       _teamsLoaded = true;
+      _recompute();
+    });
+
+    _studentsSub = _studentsCollection.snapshots().listen((snap) {
+      _studentDocs = snap.docs;
+      _studentsLoaded = true;
+      _recompute();
+    }, onError: (e) {
+      errorMessage = 'Failed to load students: $e';
+      _studentsLoaded = true;
       _recompute();
     });
 
@@ -148,13 +165,13 @@ class HomeStatsProvider extends ChangeNotifier {
   }
 
   /// Rebuilds latestWinners / livePrograms / standingsByCategory from
-  /// whatever the three listeners currently hold. Called after every
+  /// whatever the four listeners currently hold. Called after every
   /// snapshot from any of them, so a change in just one collection (say,
   /// a single registration flipping to 'Assigned') still recomputes
   /// everything derived from the latest combined state.
   void _recompute() {
     // Still waiting on the first snapshot from one or more listeners.
-    if (!_teamsLoaded || !_publishedLoaded || !_assignedLoaded) {
+    if (!_teamsLoaded || !_publishedLoaded || !_assignedLoaded || !_studentsLoaded) {
       notifyListeners();
       return;
     }
@@ -189,6 +206,11 @@ class HomeStatsProvider extends ChangeNotifier {
         pointsByCategory[category]![doc.id] = 0;
       }
 
+      // STUDENT_ID -> PHOTO_URL, so winners can show the student's photo.
+      final studentPhotos = <String, String>{
+        for (final doc in _studentDocs) doc.id: (doc.data()['PHOTO_URL'] ?? '').toString(),
+      };
+
       // ---- Latest 10 rank-1 winners, most recently judged first ----
       final winners = <WinnerEntry>[];
       for (final doc in _publishedDocs) {
@@ -196,11 +218,13 @@ class HomeStatsProvider extends ChangeNotifier {
         if (data['RANK'] == 1) {
           final ts = data['judgedAt'];
           final teamId = (data['TEAM_ID'] ?? '').toString();
+          final studentId = (data['STUDENT_ID'] ?? '').toString();
           winners.add(WinnerEntry(
             programName: (data['PROGRAM_NAME'] ?? '').toString(),
             studentName: (data['STUDENT_NAME'] ?? '').toString(),
             teamName: teamNames[teamId] ?? teamId,
             judgedAt: ts is Timestamp ? ts.toDate() : null,
+            photoUrl: studentPhotos[studentId] ?? '',
           ));
         }
       }
@@ -298,6 +322,7 @@ class HomeStatsProvider extends ChangeNotifier {
     _teamsSub?.cancel();
     _publishedSub?.cancel();
     _assignedSub?.cancel();
+    _studentsSub?.cancel();
     super.dispose();
   }
 }

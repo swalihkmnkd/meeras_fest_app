@@ -331,20 +331,34 @@ class _AdminActionCardState extends State<AdminActionCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.22),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                widget.icon,
-                color: Colors.white,
-                size: 20,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.22),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: Colors.white,
+                    size: 15,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  widget.count,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 6),
 
             // Title
             Text(
@@ -357,22 +371,6 @@ class _AdminActionCardState extends State<AdminActionCard> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
-            const SizedBox(height: 4),
-
-            // Count
-            Text(
-              widget.count,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 2),
 
             // Subtitle
             Text(

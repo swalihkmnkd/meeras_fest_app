@@ -23,7 +23,6 @@ class AdminScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 10),
               const Text(
                 "Admin Panel",
                 style: TextStyle(
@@ -36,7 +35,6 @@ class AdminScreen extends StatelessWidget {
                 "Manage festival operations",
                 style: TextStyle(color: Color(0xff6B7280), fontSize: 13),
               ),
-              const SizedBox(height: 20),
 
               // ---------- Quick actions (3D cards) ----------
               const Text(
@@ -47,7 +45,7 @@ class AdminScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Consumer<AdminProvider>(
                 builder: (context, adminPro, child) {
 

@@ -584,13 +584,20 @@ class _ProgramTypeSection extends StatelessWidget {
                 Text(r.programName,
                     style: TextStyle(fontSize: 11, color: fg, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 2),
-                InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () => onDelete(r),
-                  child: Padding(
-                    padding: const EdgeInsets.all(3),
-                    child: Icon(Icons.close_rounded, size: 13, color: fg),
-                  ),
+                Consumer<RegistrationProvider>(
+                    builder: (context,regPro,child) {
+                      if(regPro.isRegistrationClosed){
+                        return SizedBox.shrink();
+                      }
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => onDelete(r),
+                        child: Padding(
+                          padding: const EdgeInsets.all(3),
+                          child: Icon(Icons.close_rounded, size: 13, color: fg),
+                        ),
+                      );
+                    }
                 ),
               ],
             ),
@@ -604,7 +611,8 @@ class _ProgramTypeSection extends StatelessWidget {
 
 /// ================= PROGRAM WISE VIEW =================
 /// Each program appears once, with every registered student + registration
-/// id listed underneath.
+/// id listed underneath — including a small avatar (photo if uploaded,
+/// initial letter otherwise) so students are recognizable at a glance.
 class _ProgramWiseList extends StatelessWidget {
   final RegistrationProvider provider;
   final Color Function(String) categoryColor;
@@ -615,6 +623,17 @@ class _ProgramWiseList extends StatelessWidget {
     required this.categoryColor,
     required this.categoryTextColor,
   });
+
+  /// Looks up a student's photo URL from the team roster by id. Returns
+  /// null if the student has no photo on file (or isn't found, which
+  /// shouldn't normally happen but is handled gracefully either way).
+  String? _photoUrlFor(String studentId) {
+    for (final s in provider.teamStudents) {
+      if (s.id == studentId) return s.photoUrl;
+    }
+    return null;
+  }
+
   Future<bool> _confirmDeleteRegistration(BuildContext context, String label) async {
     final result = await showDialog<bool>(
       context: context,
@@ -716,30 +735,45 @@ class _ProgramWiseList extends StatelessWidget {
               const SizedBox(height: 10),
               const Divider(height: 1, color: Color(0xffF3F4F6)),
               const SizedBox(height: 8),
-              ...group.registrations.map((r) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person_outline, size: 14, color: Color(0xff9CA3AF)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(r.studentName,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                    ),
-                    Text('ID: ${r.registrationNumber}',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _deleteRegistration(context, provider, r),
-                      child: const Padding(
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xffEF4444)),
+              ...group.registrations.map((r) {
+                final photoUrl = _photoUrlFor(r.studentId);
+                final hasPhoto = photoUrl != null && photoUrl.isNotEmpty;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: const Color(0xffF3F4F6),
+                        backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
+                        child: !hasPhoto
+                            ? Text(
+                          r.studentName.isNotEmpty ? r.studentName[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                              fontSize: 10, color: Color(0xff6B7280), fontWeight: FontWeight.bold),
+                        )
+                            : null,
                       ),
-                    ),
-                  ],
-                ),
-              )),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(r.studentName,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      ),
+                      Text('ID: ${r.registrationNumber}',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      const SizedBox(width: 8),
+                      provider.isRegistrationClosed?SizedBox.shrink():InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => _deleteRegistration(context, provider, r),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xffEF4444)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
           ),
         );

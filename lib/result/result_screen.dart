@@ -56,6 +56,53 @@ class _ResultScreenState extends State<ResultScreen> {
   String _formatPoints(num points) =>
       points % 1 == 0 ? points.toInt().toString() : points.toString();
 
+  void _openPhoto(BuildContext context, String photoUrl, String studentName) {
+    if (photoUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                photoUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200,
+                  width: 200,
+                  color: Colors.white,
+                  child: const Icon(Icons.broken_image, size: 48, color: Color(0xff9CA3AF)),
+                ),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const SizedBox(
+                    height: 200,
+                    width: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              studentName,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,10 +286,60 @@ class _ResultScreenState extends State<ResultScreen> {
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                          child: Text(_medalFor(entry.rank), style: GoogleFonts.inter(fontSize: 16)),
+                                        // ---- Student photo avatar with rank medal stacked bottom-right ----
+                                        GestureDetector(
+                                          onTap: () => _openPhoto(context, entry.photoUrl, entry.studentName),
+                                          child: SizedBox(
+                                            width: 36,
+                                            height: 36,
+                                            child: Stack(
+                                              clipBehavior: Clip.none,
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 16,
+                                                  backgroundColor: const Color(0xffF3F4F6),
+                                                  child: ClipOval(
+                                                    child: entry.photoUrl.isNotEmpty
+                                                        ? Image.network(
+                                                      entry.photoUrl,
+                                                      width: 32,
+                                                      height: 32,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => const Icon(
+                                                        Icons.person,
+                                                        size: 16,
+                                                        color: Color(0xff9CA3AF),
+                                                      ),
+                                                      loadingBuilder: (context, child, progress) {
+                                                        if (progress == null) return child;
+                                                        return const SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                                                        );
+                                                      },
+                                                    )
+                                                        : const Icon(
+                                                      Icons.person,
+                                                      size: 16,
+                                                      color: Color(0xff9CA3AF),
+                                                    ),
+                                                  ),
+                                                ),
+                                                // Rank medal badge, pinned to bottom-right corner
+                                                Positioned(
+                                                  top: 2,
+                                                  right: 0,
+                                                  child: Text(
+                                                    _medalFor(entry.rank),
+                                                    style: GoogleFonts.inter(fontSize: 14, height: 1),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
+                                        const SizedBox(width: 12),
                                         Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,

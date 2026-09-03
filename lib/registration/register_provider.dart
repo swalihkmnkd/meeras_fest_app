@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,6 +20,12 @@ class StudentRegistrationGroup {
   final String studentName;
   final String registrationNumber;
   final String? photoUrl;
+  // ⬅️ NEW: the student's category (e.g. "Senior"), taken from their
+  // registrations. A student's registrations are all filed under their
+  // own category, so the first registration's PROGRAM_CATEGORY is
+  // representative — same pattern as studentName/registrationNumber
+  // below, which are also read off the first entry.
+  final String programCategory;
   final List<RegistrationModel> stagePrograms;
   final List<RegistrationModel> nonStagePrograms;
   final List<RegistrationModel> generalPrograms;
@@ -28,6 +35,7 @@ class StudentRegistrationGroup {
     required this.studentName,
     required this.registrationNumber,
     required this.photoUrl,
+    required this.programCategory,
     required this.stagePrograms,
     required this.nonStagePrograms,
     required this.generalPrograms,
@@ -80,6 +88,76 @@ class RegistrationProvider extends ChangeNotifier {
   int nonStageLimit = 4;
 
   int _limitFor(String stageType) => stageType == 'Stage' ? stageLimit : nonStageLimit;
+
+  // ⬅️ NEW: registration deadline (Firestore Timestamp field
+  // REGISTRATION_DEADLINE on SETTINGS/REGISTRATION_LIMITS), kept live via
+  // _settingsSubscription. Null = no deadline configured, registration
+  // stays open.
+  DateTime? registrationDeadline;
+  Timer? _deadlineTimer;
+
+  // ⬅️ NEW: live listener on the settings doc, so if the admin changes the
+  // deadline (or the Stage/Non Stage limits) while a team has this screen
+  // open, it updates immediately — no need to leave and come back.
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _settingsSubscription;
+
+  void _listenToSettings() {
+    _settingsSubscription?.cancel();
+    _settingsSubscription = _settingsDoc.snapshots().listen((snap) {
+      final settingsData = snap.data();
+      if (settingsData == null) return;
+
+      stageLimit = (settingsData['STAGE_LIMIT'] as num?)?.toInt() ?? stageLimit;
+      nonStageLimit = (settingsData['NON_STAGE_LIMIT'] as num?)?.toInt() ?? nonStageLimit;
+
+      final deadlineTs = settingsData['REGISTRATION_DEADLINE'];
+      final newDeadline = deadlineTs is Timestamp ? deadlineTs.toDate() : null;
+      final deadlineChanged = newDeadline != registrationDeadline;
+      registrationDeadline = newDeadline;
+
+      // Only restart the ticking timer if the deadline actually moved (or
+      // was set/cleared) — avoids resetting it every second for no reason.
+      if (deadlineChanged) _startDeadlineWatcher();
+
+      notifyListeners();
+    });
+  }
+
+  /// True once the deadline has passed (or is exactly now). Always false
+  /// when no deadline is configured.
+  bool get isRegistrationClosed {
+    final deadline = registrationDeadline;
+    if (deadline == null) return false;
+    return !DateTime.now().isBefore(deadline);
+  }
+
+  /// Time remaining until the deadline, or null if there isn't one
+  /// configured, or Duration.zero if it has already passed.
+  Duration? get timeUntilDeadline {
+    final deadline = registrationDeadline;
+    if (deadline == null) return null;
+    final diff = deadline.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  /// Ticks every second so the UI (countdown banner + disabled controls)
+  /// updates live once the deadline passes, without requiring the user to
+  /// take any action or navigate away and back.
+  void _startDeadlineWatcher() {
+    _deadlineTimer?.cancel();
+    if (registrationDeadline == null) return;
+    _deadlineTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      notifyListeners();
+      if (isRegistrationClosed) timer.cancel();
+    });
+  }
+
+  @override
+  void dispose() {
+    _deadlineTimer?.cancel();
+    _settingsSubscription?.cancel();
+    super.dispose();
+  }
 
   String? _teamId;
 
@@ -167,7 +245,7 @@ class RegistrationProvider extends ChangeNotifier {
         _programsCollection.get(),
         _registrationsCollection.get(),
         _categoriesCollection.get(),
-        _settingsDoc.get(), // ⬅️ NEW: admin-configured Stage/Non Stage limits
+        _settingsDoc.get(), // initial admin-configured limits + deadline
       ]);
       teamStudents = (results[0] as QuerySnapshot<Map<String, dynamic>>)
           .docs
@@ -186,14 +264,22 @@ class RegistrationProvider extends ChangeNotifier {
           .map((d) => CategoryModel.fromDoc(d))
           .toList();
 
-      // ⬅️ NEW: pull the admin-set limits, falling back to the defaults
-      // above if the settings doc doesn't exist yet.
+      // Pull the admin-set limits + deadline for the initial paint, falling
+      // back to the defaults above if the settings doc doesn't exist yet.
       final settingsData =
       (results[4] as DocumentSnapshot<Map<String, dynamic>>).data();
       if (settingsData != null) {
         stageLimit = (settingsData['STAGE_LIMIT'] as num?)?.toInt() ?? stageLimit;
         nonStageLimit = (settingsData['NON_STAGE_LIMIT'] as num?)?.toInt() ?? nonStageLimit;
+
+        final deadlineTs = settingsData['REGISTRATION_DEADLINE'];
+        registrationDeadline = deadlineTs is Timestamp ? deadlineTs.toDate() : null;
       }
+      _startDeadlineWatcher();
+
+      // ⬅️ NEW: from here on, stay subscribed so admin changes (deadline
+      // extended/shortened/removed, limits changed) reach this screen live.
+      _listenToSettings();
 
       errorMessage = null;
     } catch (e) {
@@ -268,8 +354,8 @@ class RegistrationProvider extends ChangeNotifier {
     final category = selectedCategory;
     if (program == null || category == null) return [];
 
-    // ⬅️ CHANGED: General categories are exempt from the per-student cap,
-    // so there's no limit to enforce for them at all.
+    // General categories are exempt from the per-student cap, so there's
+    // no limit to enforce for them at all.
     final capApplies = !category.isGeneral;
     final cap = _limitFor(program.stageType ?? '');
 
@@ -351,6 +437,9 @@ class RegistrationProvider extends ChangeNotifier {
 
   /// Stages the currently checked students against the selected program.
   String? addSelectedToList() {
+    // ⬅️ NEW: hard stop once the registration deadline has passed.
+    if (isRegistrationClosed) return 'Registration is closed';
+
     final program = selectedProgram;
     final category = selectedCategory;
     if (category == null) return 'Please select a category';
@@ -364,7 +453,7 @@ class RegistrationProvider extends ChangeNotifier {
     }
 
     final stageType = program.stageType ?? '';
-    // ⬅️ CHANGED: General categories are exempt from the per-student cap.
+    // General categories are exempt from the per-student cap.
     final capApplies = !category.isGeneral;
     final cap = _limitFor(stageType);
     if (capApplies) {
@@ -434,6 +523,11 @@ class RegistrationProvider extends ChangeNotifier {
   }
 
   Future<String?> submitAll() async {
+    // ⬅️ NEW: hard stop once the registration deadline has passed. Checked
+    // again here (not just in addSelectedToList) in case entries were
+    // staged before the deadline hit and the user submits after.
+    if (isRegistrationClosed) return 'Registration is closed';
+
     if (pendingEntries.isEmpty) {
       return 'No registrations to submit';
     }
@@ -590,6 +684,7 @@ class RegistrationProvider extends ChangeNotifier {
         studentName: regs.first.studentName,
         registrationNumber: regs.first.registrationNumber,
         photoUrl: photoUrl,
+        programCategory: regs.first.programCategory,
         stagePrograms: stage,
         nonStagePrograms: nonStage,
         generalPrograms: general,

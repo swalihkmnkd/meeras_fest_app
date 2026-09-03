@@ -8,6 +8,7 @@ class RankedEntry {
   final int rank;
   final num points;
   final String studentCategory; // STUDENT_CATEGORY, e.g. "Sub Junior" / "Senior"
+  final String photoUrl; // STUDENTS.PHOTO_URL, joined via STUDENT_ID
 
   RankedEntry({
     required this.studentName,
@@ -15,6 +16,7 @@ class RankedEntry {
     required this.rank,
     required this.points,
     required this.studentCategory,
+    required this.photoUrl,
   });
 }
 
@@ -50,6 +52,7 @@ class ResultProvider extends ChangeNotifier {
   final _programsCollection = FirebaseFirestore.instance.collection('PROGRAMS');
   final _registrationsCollection = FirebaseFirestore.instance.collection('REGISTRATIONS');
   final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS');
+  final _studentsCollection = FirebaseFirestore.instance.collection('STUDENTS');
 
   bool isLoading = false;
   String? errorMessage;
@@ -138,8 +141,6 @@ class ResultProvider extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final programsSnap = await _programsCollection.get();
-
       // ⬅️ FIXED: only filter by STATUS in the Firestore query. The
       // previous version also chained `.where('RANK', isGreaterThan: 0)`,
       // which (a) requires a composite (STATUS, RANK) index — without one
@@ -149,15 +150,30 @@ class ResultProvider extends ChangeNotifier {
       // RANK is already parsed defensively below and filtered to > 0 in
       // memory, so the Firestore-side range filter was both fragile and
       // redundant. A single equality filter needs no composite index.
-      final registrationsSnap = await _registrationsCollection
-          .where('STATUS', isEqualTo: 'Published')
-          .get();
+      final results0 = await Future.wait([
+        _programsCollection.get(),
+        _registrationsCollection.where('STATUS', isEqualTo: 'Published').get(),
+        _teamsCollection.get(),
+        _studentsCollection.get(),
+      ]);
 
-      final teamsSnap = await _teamsCollection.get();
+      final programsSnap = results0[0];
+      final registrationsSnap = results0[1];
+      final teamsSnap = results0[2];
+      final studentsSnap = results0[3];
 
       final teamNames = {
         for (final d in teamsSnap.docs)
-          d.id: (d.data()['NAME'] ?? d.data()['TEAM_NAME'] ?? '').toString(),
+          d.id: ((d.data() as Map<String, dynamic>)['NAME'] ??
+              (d.data() as Map<String, dynamic>)['TEAM_NAME'] ??
+              '')
+              .toString(),
+      };
+
+      // STUDENT_ID -> PHOTO_URL, so ranked entries can show the student's photo.
+      final studentPhotos = {
+        for (final d in studentsSnap.docs)
+          d.id: ((d.data() as Map<String, dynamic>)['PHOTO_URL'] ?? '').toString(),
       };
 
       final byProgram = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
@@ -178,12 +194,14 @@ class ResultProvider extends ChangeNotifier {
               ? data['RANK'] as int
               : int.tryParse('${data['RANK']}') ?? 0;
           final teamId = (data['TEAM_ID'] ?? '').toString();
+          final studentId = (data['STUDENT_ID'] ?? '').toString();
           return RankedEntry(
             studentName: (data['STUDENT_NAME'] ?? '').toString(),
             teamName: teamNames[teamId] ?? teamId,
             rank: rank,
             points: (data['POINT'] ?? 0) as num,
             studentCategory: (data['STUDENT_CATEGORY'] ?? '').toString(),
+            photoUrl: studentPhotos[studentId] ?? '',
           );
         }).where((e) => e.rank > 0).toList()
           ..sort((a, b) => a.rank.compareTo(b.rank));

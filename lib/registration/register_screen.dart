@@ -7,6 +7,15 @@ import '../admin/models/categoryModel.dart';
 import '../admin/models/programModel.dart';
 import '../admin/models/studentModel.dart';
 
+/// Formats a [Duration] as a short "Xd Yh Zm" / "Yh Zm" / "Zm Ws" / "Ws"
+/// countdown string, dropping leading zero units.
+String _formatDuration(Duration d) {
+  if (d.inDays > 0) return '${d.inDays}d ${d.inHours % 24}h ${d.inMinutes % 60}m';
+  if (d.inHours > 0) return '${d.inHours}h ${d.inMinutes % 60}m';
+  if (d.inMinutes > 0) return '${d.inMinutes}m ${d.inSeconds % 60}s';
+  return '${d.inSeconds}s';
+}
+
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
@@ -65,6 +74,66 @@ class RegisterScreen extends StatelessWidget {
                       style: TextStyle(
                           color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12)),
                 ),
+
+                // ⬅️ NEW: registration deadline banner — closed notice once
+                // the deadline has passed, or a live countdown before that.
+                if (provider.isRegistrationClosed)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.lock_clock_outlined, color: Color(0xFFB91C1C), size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Registration is closed. The deadline has passed.',
+                              style: TextStyle(
+                                  color: Color(0xFFB91C1C),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (provider.timeUntilDeadline != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Color(0xFF92400E), size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Registration closes in ${_formatDuration(provider.timeUntilDeadline!)}',
+                              style: const TextStyle(
+                                  color: Color(0xFF92400E),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: _RegistrationForm(provider: provider),
@@ -167,7 +236,10 @@ class RegisterScreen extends StatelessWidget {
                         ),
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: provider.isSubmitting || provider.pendingEntries.isEmpty
+                        // ⬅️ CHANGED: also disabled once registration is closed.
+                        onPressed: provider.isSubmitting ||
+                            provider.pendingEntries.isEmpty ||
+                            provider.isRegistrationClosed
                             ? null
                             : () async {
                           final error = await provider.submitAll();
@@ -215,6 +287,7 @@ class _RegistrationForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final closed = provider.isRegistrationClosed; // ⬅️ NEW
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -252,7 +325,8 @@ class _RegistrationForm extends StatelessWidget {
                     items: provider.categoriesForTeam
                         .map((c) => DropdownMenuItem(value: c, child: Text(c.name, style: const TextStyle(fontSize: 12))))
                         .toList(),
-                    onChanged: provider.setCategory,
+                    // ⬅️ CHANGED: disabled once registration is closed.
+                    onChanged: closed ? null : provider.setCategory,
                   ),
                 ),
               ),
@@ -279,7 +353,8 @@ class _RegistrationForm extends StatelessWidget {
                   items: provider.stageTypeOptions
                       .map((st) => DropdownMenuItem(value: st, child: Text(st, style: const TextStyle(fontSize: 12))))
                       .toList(),
-                  onChanged: provider.selectedCategory == null ? null : provider.setStageType,
+                  // ⬅️ CHANGED: disabled once registration is closed.
+                  onChanged: closed || provider.selectedCategory == null ? null : provider.setStageType,
                 ),
               ),
             ),
@@ -312,7 +387,8 @@ class _RegistrationForm extends StatelessWidget {
                     ),
                   ))
                       .toList(),
-                  onChanged: provider.selectedStageType == null ? null : provider.setProgram,
+                  // ⬅️ CHANGED: disabled once registration is closed.
+                  onChanged: closed || provider.selectedStageType == null ? null : provider.setProgram,
                 ),
               ),
             ),
@@ -336,7 +412,10 @@ class _RegistrationForm extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
+              // ⬅️ CHANGED: disabled once registration is closed.
+              onPressed: closed
+                  ? null
+                  : () {
                 final error = provider.addSelectedToList();
                 if (error != null) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
@@ -370,6 +449,7 @@ class _StudentChecklist extends StatelessWidget {
   Widget build(BuildContext context) {
     final students = provider.eligibleStudents;
     final program = provider.selectedProgram;
+    final closed = provider.isRegistrationClosed; // ⬅️ NEW
 
     if (students.isEmpty) {
       return _BoxWrapper(
@@ -401,7 +481,9 @@ class _StudentChecklist extends StatelessWidget {
             ),
           ...students.map((StudentModel s) {
             final selected = provider.selectedStudentIds.contains(s.id);
-            final atLimit = !selected && provider.selectedStudentIds.length >= remaining;
+            // ⬅️ CHANGED: also "at limit" (i.e. can't be tapped) once closed.
+            final atLimit =
+                closed || (!selected && provider.selectedStudentIds.length >= remaining);
             return InkWell(
               onTap: atLimit
                   ? null

@@ -55,7 +55,7 @@ class _OverviewView extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 14,
                 crossAxisSpacing: 14,
-                childAspectRatio: 1.25,
+                childAspectRatio: 1.80,
                 children: [
                   AdminActionCard(
                     count: dashboard.studentCount.toString(),
@@ -155,101 +155,6 @@ class _OverviewView extends StatelessWidget {
               // ---------- Home page carousel manager ----------
               const CarouselSection(),
               const SizedBox(height: 15),
-
-              // Real pending results replacing the old dummy list
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Results Awaiting Publish",
-                          style: TextStyle(color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        if (results.pendingResults.isNotEmpty)
-                          TextButton(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const ResultsReviewPage()),
-                            ),
-                            child: const Text('View All', style: TextStyle(fontSize: 12)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (results.isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (results.pendingResults.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          "Nothing waiting to be published.",
-                          style: TextStyle(color: Color(0xff9CA3AF), fontSize: 12),
-                        ),
-                      )
-                    else
-                      ListView.builder(
-                        padding: EdgeInsets.zero,
-                        // Preview only the first 5 here; full list lives on
-                        // ResultsReviewPage via "View All".
-                        itemCount: results.pendingResults.length > 5 ? 5 : results.pendingResults.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final r = results.pendingResults[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(r.studentName,
-                                          style: const TextStyle(
-                                              color: Color(0xff1F2937), fontWeight: FontWeight.w400, fontSize: 12)),
-                                      Text(r.programName,
-                                          style: const TextStyle(color: Color(0xff6B7280), fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffFFEDD5),
-                                    borderRadius: BorderRadius.circular(9999),
-                                  ),
-                                  child: const Text('Resulted',
-                                      style: TextStyle(
-                                          color: Color(0xffF97316), fontWeight: FontWeight.w400, fontSize: 12)),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-              ),
             ],
           ),
         );
