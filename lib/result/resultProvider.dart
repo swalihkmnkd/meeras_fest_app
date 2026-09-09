@@ -280,6 +280,8 @@ class ResultProvider extends ChangeNotifier {
   Future<void> fetchResultsPoster() async {
     isLoading = true;
     errorMessage = null;
+    _allResults = []; // ⬅️ clear stale data immediately so old results don't
+    // flash/linger on screen while this fetch is in flight
     notifyListeners();
     try {
       // ⬅️ FIXED: only filter by STATUS in the Firestore query. The
@@ -293,7 +295,10 @@ class ResultProvider extends ChangeNotifier {
       // redundant. A single equality filter needs no composite index.
       final results0 = await Future.wait([
         _programsCollection.get(),
-        _registrationsCollection.where('STATUS', isEqualTo: 'Published').where("IS_GENERAL",isNotEqualTo: true).get(),
+        _registrationsCollection
+            .where('STATUS', isEqualTo: 'Published')
+            .where("IS_GENERAL", isNotEqualTo: true)
+            .get(),
         _teamsCollection.get(),
         _studentsCollection.get(),
       ]);
