@@ -16,7 +16,7 @@ String _formatDuration(Duration d) {
   return '${d.inSeconds}s';
 }
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
   static Color _stageColor(String stageType) {
@@ -42,13 +42,45 @@ class RegisterScreen extends StatelessWidget {
   }
 
   @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  // Remembers which (teamId, teamCategory) pair we last loaded so we only
+  // call loadForTeam() when it actually changes, instead of every build.
+  String? _loadedTeamId;
+  String? _loadedTeamCategory;
+
+  // Queues loadForTeam() to run right after the current frame finishes,
+  // rather than calling it inline during build(). RegistrationProvider's
+  // loadForTeam() calls notifyListeners() synchronously, and doing that
+  // *during* RegisterScreen's own build() is what threw:
+  //   "setState() or markNeedsBuild() called during build."
+  // A post-frame callback runs once the widget tree has finished
+  // building for this frame, so the notification is safe.
+  void _scheduleLoadForTeam(String teamId, String? teamCategory) {
+    if (_loadedTeamId == teamId && _loadedTeamCategory == teamCategory) {
+      return; // already loaded (or loading) this exact team/category
+    }
+    _loadedTeamId = teamId;
+    _loadedTeamCategory = teamCategory;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<RegistrationProvider>().loadForTeam(teamId, teamCategory);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final teamId = context.watch<ProfileProvider>().teamId;
+    final teamName = context.watch<ProfileProvider>().teamName;
+    final teamLeader = context.watch<ProfileProvider>().teamLeader;
     // NOTE: adjust `teamCategory` below if your ProfileProvider names the
     // team's own Boy/Girl/Mixed field differently.
     final teamCategory = context.watch<ProfileProvider>().teamCategory;
     if (teamId != null) {
-      context.read<RegistrationProvider>().loadForTeam(teamId, teamCategory);
+      _scheduleLoadForTeam(teamId, teamCategory);
     }
 
     return Scaffold(
@@ -62,20 +94,92 @@ class RegisterScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 30),
-                const Padding(
-                  padding: EdgeInsets.only(left: 12.0),
-                  child: Text("Register Programs",
-                      style: TextStyle(
-                          color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 18)),
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 12.0),
-                  child: Text("Add participants for your team",
-                      style: TextStyle(
-                          color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12)),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12.0, right: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Page title
+                      const Text(
+                        "Register Programs",
+                        style: TextStyle(
+                          color: Color(0xff111827),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 19,
+                          letterSpacing: -0.3,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+
+                      // Subtitle
+                      const Text(
+                        "Add participants for your team",
+                        style: TextStyle(
+                          color: Color(0xff6B7280),
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+
+                      // Team identity row — only shown once we actually have a team name
+                      if (teamName != null && teamName.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xff58293D).withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.groups_rounded, size: 12, color: Color(0xff58293D)),
+                                  const SizedBox(width: 4),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 120),
+                                    child: Text(
+                                      teamName,
+                                      style: const TextStyle(
+                                        color: Color(0xff58293D),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                        letterSpacing: -0.1,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (teamLeader != null && teamLeader.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Leader: $teamLeader',
+                                  style: const TextStyle(
+                                    color: Color(0xff9CA3AF),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 10.5,
+                                    letterSpacing: -0.1,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
 
-                // ⬅️ NEW: registration deadline banner — closed notice once
+                // registration deadline banner — closed notice once
                 // the deadline has passed, or a live countdown before that.
                 if (provider.isRegistrationClosed)
                   Padding(
@@ -197,13 +301,13 @@ class RegisterScreen extends StatelessWidget {
                                           padding:
                                           const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: _stageColor(item.stageType),
+                                            color: RegisterScreen._stageColor(item.stageType),
                                             borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Text(item.stageType,
                                               style: TextStyle(
                                                   fontSize: 12,
-                                                  color: _stageTextColor(item.stageType))),
+                                                  color: RegisterScreen._stageTextColor(item.stageType))),
                                         ),
                                       ],
                                     ),
@@ -236,7 +340,7 @@ class RegisterScreen extends StatelessWidget {
                         ),
                       ),
                       child: ElevatedButton.icon(
-                        // ⬅️ CHANGED: also disabled once registration is closed.
+                        // also disabled once registration is closed.
                         onPressed: provider.isSubmitting ||
                             provider.pendingEntries.isEmpty ||
                             provider.isRegistrationClosed
@@ -287,7 +391,7 @@ class _RegistrationForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final closed = provider.isRegistrationClosed; // ⬅️ NEW
+    final closed = provider.isRegistrationClosed;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -325,7 +429,6 @@ class _RegistrationForm extends StatelessWidget {
                     items: provider.categoriesForTeam
                         .map((c) => DropdownMenuItem(value: c, child: Text(c.name, style: const TextStyle(fontSize: 12))))
                         .toList(),
-                    // ⬅️ CHANGED: disabled once registration is closed.
                     onChanged: closed ? null : provider.setCategory,
                   ),
                 ),
@@ -353,7 +456,6 @@ class _RegistrationForm extends StatelessWidget {
                   items: provider.stageTypeOptions
                       .map((st) => DropdownMenuItem(value: st, child: Text(st, style: const TextStyle(fontSize: 12))))
                       .toList(),
-                  // ⬅️ CHANGED: disabled once registration is closed.
                   onChanged: closed || provider.selectedCategory == null ? null : provider.setStageType,
                 ),
               ),
@@ -387,7 +489,6 @@ class _RegistrationForm extends StatelessWidget {
                     ),
                   ))
                       .toList(),
-                  // ⬅️ CHANGED: disabled once registration is closed.
                   onChanged: closed || provider.selectedStageType == null ? null : provider.setProgram,
                 ),
               ),
@@ -412,7 +513,6 @@ class _RegistrationForm extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              // ⬅️ CHANGED: disabled once registration is closed.
               onPressed: closed
                   ? null
                   : () {
@@ -449,7 +549,7 @@ class _StudentChecklist extends StatelessWidget {
   Widget build(BuildContext context) {
     final students = provider.eligibleStudents;
     final program = provider.selectedProgram;
-    final closed = provider.isRegistrationClosed; // ⬅️ NEW
+    final closed = provider.isRegistrationClosed;
 
     if (students.isEmpty) {
       return _BoxWrapper(
@@ -481,7 +581,7 @@ class _StudentChecklist extends StatelessWidget {
             ),
           ...students.map((StudentModel s) {
             final selected = provider.selectedStudentIds.contains(s.id);
-            // ⬅️ CHANGED: also "at limit" (i.e. can't be tapped) once closed.
+            // also "at limit" (i.e. can't be tapped) once closed.
             final atLimit =
                 closed || (!selected && provider.selectedStudentIds.length >= remaining);
             return InkWell(

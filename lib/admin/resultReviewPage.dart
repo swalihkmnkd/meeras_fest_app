@@ -74,6 +74,10 @@ class _ProgramResultsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final publishing = provider.isPublishingProgram(group.programId);
+    // ⬅️ CHANGED: one card per team for General programs, so editing a
+    // team's shared score doesn't show (or require touching) a separate
+    // row per teammate.
+    final visibleResults = group.displayedResults;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -100,13 +104,16 @@ class _ProgramResultsCard extends StatelessWidget {
                   color: const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('${group.results.length} student(s)',
+                // ⬅️ CHANGED: reflects what's actually listed below (one
+                // chip per team for General), not the raw registration count.
+                child: Text(group.results[0].isGeneral?'${visibleResults.length} teams':'${visibleResults.length} students',
                     style: const TextStyle(fontSize: 11, color: Color(0xff6B7280))),
               ),
             ],
           ),
           const Divider(height: 20),
-          ...group.results.map((result) => _StudentResultRow(result: result, provider: provider)),
+          // ⬅️ CHANGED: iterate visibleResults instead of group.results.
+          ...visibleResults.map((result) => _StudentResultRow(result: result, provider: provider)),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -131,7 +138,9 @@ class _ProgramResultsCard extends StatelessWidget {
                   height: 18,
                   width: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Publish ${group.programName} (${group.results.length})',
+              // ⬅️ Unchanged: still shows the true registration count
+              // being published, even though fewer cards are shown above.
+                  : Text('Publish ${group.programName} (${visibleResults.length})',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -149,6 +158,9 @@ class _StudentResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final saving = provider.isSavingEdit(result.id);
+    // ⬅️ NEW: General programs are team results — show the team name,
+    // never the representative student's name.
+    final title = result.isGeneral ? result.teamName : result.studentName;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -163,7 +175,7 @@ class _StudentResultRow extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(result.studentName,
+                      child: Text(title,
                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                           overflow: TextOverflow.ellipsis),
                     ),
@@ -180,8 +192,11 @@ class _StudentResultRow extends StatelessWidget {
                       ),
                   ],
                 ),
-                Text('Reg #${result.registerNumber}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                // ⬅️ CHANGED: Reg # is per-student and not meaningful for
+                // a team-level General row — shown only for non-general.
+                if (!result.isGeneral)
+                  Text('Reg #${result.registerNumber}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 Text(
                   'Grade ${result.grade}'
                       '${result.rank != null ? ' · Rank ${result.rank}' : ''}'

@@ -6,8 +6,18 @@ import 'package:meeras_fest_app/registration/student_details_screen.dart';
 import 'package:meeras_fest_app/registration/student_id_pdf.dart';
 import 'package:provider/provider.dart';
 
-class ListRegistrationScreen extends StatelessWidget {
+class ListRegistrationScreen extends StatefulWidget {
   const ListRegistrationScreen({super.key});
+
+  @override
+  State<ListRegistrationScreen> createState() => _ListRegistrationScreenState();
+}
+
+class _ListRegistrationScreenState extends State<ListRegistrationScreen> {
+  // Tracks which team we last triggered a load for, so we only call
+  // loadForTeam when it actually changes — not on every rebuild.
+  String? _loadedTeamId;
+  String? _loadedTeamName;
 
   static Color _categoryColor(String category) {
     switch (category) {
@@ -69,8 +79,18 @@ class ListRegistrationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final teamId = context.watch<ProfileProvider>().teamId;
     final teamName = context.watch<ProfileProvider>().teamName ?? '';
-    if (teamId != null) {
-      context.read<RegistrationProvider>().loadForTeam(teamId);
+    final teamLeader = context.watch<ProfileProvider>().teamLeader ?? '';
+
+    // ✅ Only trigger a load when the team actually changes, and defer the
+    // call to after this frame finishes building — calling a
+    // notifyListeners()-triggering method directly inside build() causes
+    // "setState() or markNeedsBuild() called during build".
+    if (teamId != null && teamId != _loadedTeamId) {
+      _loadedTeamId = teamId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<RegistrationProvider>().loadForTeam(teamId);
+      });
     }
 
     return Scaffold(
@@ -87,18 +107,86 @@ class ListRegistrationScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 12.0, right: 8.0),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Registrations",
-                              style: TextStyle(
-                                  color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 18)),
-                          Text("View and manage your team's entries",
-                              style: TextStyle(
-                                  color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12)),
+                        children: [
+                          // Page title — primary heading, largest & darkest
+                          const Text(
+                            "Registrations",
+                            style: TextStyle(
+                              color: Color(0xff111827),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 19,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+
+                          // Subtitle
+                          const Text(
+                            "View and manage your team's entries",
+                            style: TextStyle(
+                              color: Color(0xff6B7280),
+                              fontWeight: FontWeight.w400,
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Team identity row — secondary context, accent color, tight
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff58293D).withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.groups_rounded, size: 12, color: Color(0xff58293D)),
+                                    const SizedBox(width: 4),
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 120),
+                                      child: Text(
+                                        teamName,
+                                        style: const TextStyle(
+                                          color: Color(0xff58293D),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                          letterSpacing: -0.1,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (teamLeader.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Leader: $teamLeader',
+                                    style: const TextStyle(
+                                      color: Color(0xff9CA3AF),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 10.5,
+                                      letterSpacing: -0.1,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -316,10 +404,6 @@ class _FilterChipRow extends StatelessWidget {
 }
 
 /// ================= STUDENT WISE VIEW =================
-/// Each student appears once, with their programs bucketed into
-/// Stage / Non Stage / General underneath, plus a tappable avatar to
-/// upload/replace the student's photo (stored in Firebase Storage).
-/// Tapping anywhere else on the card opens the full-screen student detail.
 class _StudentWiseList extends StatelessWidget {
   final RegistrationProvider provider;
   final String teamName;
@@ -349,12 +433,6 @@ class _StudentGroupCard extends StatelessWidget {
   final String teamName;
   const _StudentGroupCard({required this.provider, required this.group, required this.teamName});
 
-  Future<void> _handleUpload(BuildContext context) async {
-    final error = await provider.uploadStudentPhoto(group.studentId);
-    if (error != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-    }
-  }
   Future<bool> _confirmDeleteRegistration(BuildContext context, String label) async {
     final result = await showDialog<bool>(
       context: context,
@@ -461,22 +539,6 @@ class _StudentGroupCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        Positioned(
-                          bottom: -2,
-                          right: -2,
-                          child: InkWell(
-                            onTap: progress != null ? null : () => _handleUpload(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xff667EEA),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(Icons.camera_alt_rounded, size: 11, color: Colors.white),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                     const SizedBox(width: 12),
@@ -610,9 +672,6 @@ class _ProgramTypeSection extends StatelessWidget {
 }
 
 /// ================= PROGRAM WISE VIEW =================
-/// Each program appears once, with every registered student + registration
-/// id listed underneath — including a small avatar (photo if uploaded,
-/// initial letter otherwise) so students are recognizable at a glance.
 class _ProgramWiseList extends StatelessWidget {
   final RegistrationProvider provider;
   final Color Function(String) categoryColor;
@@ -624,9 +683,6 @@ class _ProgramWiseList extends StatelessWidget {
     required this.categoryTextColor,
   });
 
-  /// Looks up a student's photo URL from the team roster by id. Returns
-  /// null if the student has no photo on file (or isn't found, which
-  /// shouldn't normally happen but is handled gracefully either way).
   String? _photoUrlFor(String studentId) {
     for (final s in provider.teamStudents) {
       if (s.id == studentId) return s.photoUrl;

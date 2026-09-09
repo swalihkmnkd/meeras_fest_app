@@ -161,8 +161,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return SizedBox.expand(
       key: const ValueKey('fullscreen'),
       child: AnimatedOpacity(
+        // Only the fade-OUT is manual (steps 4). The fade-IN is already
+        // handled by the parent AnimatedSwitcher's crossfade.
         opacity: _fullScreenOpacity,
-        duration: _fullScreenFadeOutDuration,
+        duration: _fullScreenOpacity == 0.0 ? _fullScreenFadeOutDuration : Duration.zero,
         curve: Curves.easeInOut,
         child: Container(
           height: double.infinity,

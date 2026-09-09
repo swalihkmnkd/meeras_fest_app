@@ -11,6 +11,7 @@ class WinnerEntry {
   final String teamName;
   final DateTime? judgedAt;
   final String photoUrl;
+  final bool isGeneral; // ⬅️ NEW — General programs are team results, not one student's
 
   WinnerEntry({
     required this.programName,
@@ -18,6 +19,7 @@ class WinnerEntry {
     required this.teamName,
     required this.judgedAt,
     required this.photoUrl,
+    required this.isGeneral,
   });
 }
 
@@ -212,19 +214,35 @@ class HomeStatsProvider extends ChangeNotifier {
       };
 
       // ---- Latest 10 rank-1 winners, most recently judged first ----
+      // ⬅️ CHANGED: for General programs, several students from the same
+      // team can all be registered (and RANK==1'd) under the same
+      // PROGRAM_ID — that's one team result, not several winners, so
+      // only the first registration per (teamId, programId) contributes
+      // a WinnerEntry. Non-general RANK==1 registrations are unaffected.
       final winners = <WinnerEntry>[];
+      final generalWinnerCounted = <String>{};
       for (final doc in _publishedDocs) {
         final data = doc.data();
         if (data['RANK'] == 1) {
           final ts = data['judgedAt'];
           final teamId = (data['TEAM_ID'] ?? '').toString();
           final studentId = (data['STUDENT_ID'] ?? '').toString();
+          final programId = (data['PROGRAM_ID'] ?? '').toString();
+          final isGeneral = data['IS_GENERAL'] == true;
+
+          if (isGeneral) {
+            final key = '$teamId|$programId';
+            if (generalWinnerCounted.contains(key)) continue;
+            generalWinnerCounted.add(key);
+          }
+
           winners.add(WinnerEntry(
             programName: (data['PROGRAM_NAME'] ?? '').toString(),
             studentName: (data['STUDENT_NAME'] ?? '').toString(),
             teamName: teamNames[teamId] ?? teamId,
             judgedAt: ts is Timestamp ? ts.toDate() : null,
             photoUrl: studentPhotos[studentId] ?? '',
+            isGeneral: isGeneral,
           ));
         }
       }

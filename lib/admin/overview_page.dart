@@ -7,6 +7,7 @@ import 'package:meeras_fest_app/stage_manager/stageManagerAdminProvider.dart';
 import 'package:meeras_fest_app/stage_manager/stageManagerListPage.dart';
 import 'package:provider/provider.dart';
 
+import '../poster/poster_template_home_page.dart';
 import 'adminWidgets.dart';
 import 'addStudentPage.dart';
 import 'categoryListPage.dart';
@@ -42,6 +43,16 @@ class OverviewPage extends StatelessWidget {
 class _OverviewView extends StatelessWidget {
   const _OverviewView();
 
+  /// Responsive column count for the quick-actions grid. Breakpoints are
+  /// tuned for phone portrait/landscape, small tablets, and wider panes
+  /// (e.g. this screen opened in a split view or on desktop/web).
+  int _crossAxisCountFor(double width) {
+    if (width >= 1100) return 5;
+    if (width >= 850) return 4;
+    if (width >= 600) return 3;
+    return 2; // phone portrait default
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer3<DashboardProvider, ResultsPublishProvider, StageManagerAdminProvider>(
@@ -49,106 +60,123 @@ class _OverviewView extends StatelessWidget {
         return SizedBox(
           child: Column(
             children: [
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: 1.80,
-                children: [
-                  AdminActionCard(
-                    count: dashboard.studentCount.toString(),
-                    title: "Add Students",
-                    subtitle: "Upload via Excel",
-                    icon: Icons.school_rounded,
-                    color: const Color(0xFF6366F1),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AddStudentsPage()),
-                    ),
-                  ),
-                  AdminActionCard(
-                    count: dashboard.programCount.toString(),
-                    title: "Programs",
-                    subtitle: "View & manage",
-                    icon: Icons.event_note_rounded,
-                    color: const Color(0xFF10B981),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProgramsListPage()),
-                    ),
-                  ),
-                  AdminActionCard(
-                    count: dashboard.categoryCount.toString(),
-                    title: "Categories",
-                    subtitle: "View & manage",
-                    icon: Icons.category_rounded,
-                    color: const Color(0xFFF59E0B),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CategoryListPage()),
-                    ),
-                  ),
-                  AdminActionCard(
-                    count: dashboard.judgeCount.toString(),
-                    title: "Judges",
-                    subtitle: "View & manage",
-                    icon: Icons.gavel_rounded,
-                    color: const Color(0xFFEF4444),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const JudgesListPage()),
-                    ),
-                  ),
-                  AdminActionCard(
-                    count: dashboard.teamCount.toString(),
-                    title: "Teams",
-                    subtitle: "View & manage",
-                    icon: Icons.groups_rounded,
-                    color: const Color(0xFF3B82F6),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TeamsListPage()),
-                    ),
-                  ),
-                  AdminActionCard(
-                    count: results.pendingResults.length.toString(),
-                    title: "Publish Results",
-                    subtitle: "Review before publishing",
-                    icon: Icons.publish_rounded,
-                    color: const Color(0xFF8B5CF6),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ResultsReviewPage()),
-                    ),
-                  ),
-                  // ⬅️ NEW: admin-editable Stage / Non Stage registration caps
-                  AdminActionCard(
-                    count: '${dashboard.stageRegistrationCount + dashboard.nonStageRegistrationCount}',
-                    title: "Registration Limits",
-                    subtitle: "Stage:${dashboard.stageRegistrationCount} / Non Stage:${dashboard.nonStageRegistrationCount}",
-                    icon: Icons.rule_rounded,
-                    color: const Color(0xFF0EA5E9),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegistrationSettingsPage()),
-                    ),
-                  ),
-                  // ⬅️ NEW: manage Stage Manager logins (name, username,
-                  // password) — add/edit/delete lives on StageManagersListPage.
-                  AdminActionCard(
-                    count: stageManagers.stageManagers.length.toString(),
-                    title: "Stage Manager",
-                    subtitle: "Add & manage logins",
-                    icon: Icons.record_voice_over_rounded,
-                    color: const Color(0xFFDB2777),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const StageManagersListPage()),
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = _crossAxisCountFor(constraints.maxWidth);
+                  return GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 1.80,
+                    children: [
+                      AdminActionCard(
+                        count: dashboard.studentCount.toString(),
+                        title: "Add Students",
+                        subtitle: "Upload via Excel",
+                        icon: Icons.school_rounded,
+                        color: const Color(0xFF6366F1),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AddStudentsPage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: dashboard.programCount.toString(),
+                        title: "Programs",
+                        subtitle: "View & manage",
+                        icon: Icons.event_note_rounded,
+                        color: const Color(0xFF10B981),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProgramsListPage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: dashboard.categoryCount.toString(),
+                        title: "Categories",
+                        subtitle: "View & manage",
+                        icon: Icons.category_rounded,
+                        color: const Color(0xFFF59E0B),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CategoryListPage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: dashboard.judgeCount.toString(),
+                        title: "Judges",
+                        subtitle: "View & manage",
+                        icon: Icons.gavel_rounded,
+                        color: const Color(0xFFEF4444),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const JudgesListPage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: dashboard.teamCount.toString(),
+                        title: "Teams",
+                        subtitle: "View & manage",
+                        icon: Icons.groups_rounded,
+                        color: const Color(0xFF3B82F6),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TeamsListPage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: results.pendingResults.length.toString(),
+                        title: "Publish Results",
+                        subtitle: "Review before publishing",
+                        icon: Icons.publish_rounded,
+                        color: const Color(0xFF8B5CF6),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ResultsReviewPage()),
+                        ),
+                      ),
+                      // ⬅️ NEW: admin-editable Stage / Non Stage registration caps
+                      AdminActionCard(
+                        count: '${dashboard.stageRegistrationCount + dashboard.nonStageRegistrationCount}',
+                        title: "Registration Limits",
+                        subtitle: "Stage:${dashboard.stageRegistrationCount} / Non Stage:${dashboard.nonStageRegistrationCount}",
+                        icon: Icons.rule_rounded,
+                        color: const Color(0xFF0EA5E9),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const RegistrationSettingsPage()),
+                        ),
+                      ),
+                      // ⬅️ NEW: manage Stage Manager logins (name, username,
+                      // password) — add/edit/delete lives on StageManagersListPage.
+                      AdminActionCard(
+                        count: stageManagers.stageManagers.length.toString(),
+                        title: "Stage Manager",
+                        subtitle: "Add & manage logins",
+                        icon: Icons.record_voice_over_rounded,
+                        color: const Color(0xFFDB2777),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const StageManagersListPage()),
+                        ),
+                      ),
+                      // inside the GridView.count children list, after the "Stage Manager" card:
+                      AdminActionCard(
+                        count: '4',
+                        title: "Poster Templates",
+                        subtitle: "Rank 1/2/3 & Default",
+                        icon: Icons.auto_awesome_rounded,
+                        color: const Color(0xFFEC4899),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PosterTemplatesHomePage()),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 15),
 

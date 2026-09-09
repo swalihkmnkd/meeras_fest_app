@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:meeras_fest_app/result/resultProvider.dart';
@@ -16,31 +18,47 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    // fetchResults() is async, so this is safe to call directly here —
-    // the widget will already be built by the time it resolves and calls
-    // notifyListeners().
     final provider = context.read<ResultProvider>();
     if (provider.results.isEmpty) {
-      provider.fetchResults();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) provider.fetchResults();
+      });
     }
   }
 
-  // Deterministic color pair per category so any category (not just a
-  // hardcoded few) gets a consistent, distinct badge color.
-  static const List<Map<String, Color>> _palette = [
-    {"text": Color(0xFF1D4ED8), "bg": Color(0xFFDBEAFE), "border": Color(0xFFBFDBFE)},
-    {"text": Color(0xFFC2410C), "bg": Color(0xFFFFEDD5), "border": Color(0xFFFED7AA)},
-    {"text": Color(0xFFBE185D), "bg": Color(0xFFFCE7F3), "border": Color(0xFFFBCFE8)},
-    {"text": Color(0xFF15803D), "bg": Color(0xFFDCFCE7), "border": Color(0xFFBBF7D0)},
-    {"text": Color(0xFF6D28D9), "bg": Color(0xFFEDE9FE), "border": Color(0xFFDDD6FE)},
+  // ---------------------------------------------------------------------
+  // Colorful gradient palette per category — each entry drives the pill
+  // color AND the card's top accent bar, for a cohesive "3D" look.
+  // ---------------------------------------------------------------------
+  static const List<List<Color>> _palette = [
+    [Color(0xFF6C63FF), Color(0xFF4834D4)], // violet
+    [Color(0xFFFF9A56), Color(0xFFFF6B6B)], // sunset
+    [Color(0xFFFF6BAA), Color(0xFFC44BC7)], // pink-magenta
+    [Color(0xFF2ED9C3), Color(0xFF1B9E86)], // teal
+    [Color(0xFF56CCF2), Color(0xFF2F80ED)], // sky blue
+    [Color(0xFFFFC371), Color(0xFFFF5F6D)], // amber-coral
   ];
 
-  Map<String, Color> _colorsFor(String category) {
+  List<Color> _gradientFor(String category) {
     if (category.isEmpty) return _palette[0];
     return _palette[category.hashCode.abs() % _palette.length];
   }
 
-  String _medalFor(int rank) {
+  // Medal styling: gold / silver / bronze get their own gradient + glow.
+  List<Color> _medalGradient(int rank) {
+    switch (rank) {
+      case 1:
+        return [const Color(0xFFFFE07A), const Color(0xFFFFA727)]; // gold
+      case 2:
+        return [const Color(0xFFEAEFF5), const Color(0xFFB6C0CC)]; // silver
+      case 3:
+        return [const Color(0xFFF6C199), const Color(0xFFCB7A3E)]; // bronze
+      default:
+        return [const Color(0xFFB9C2FF), const Color(0xFF7A86E8)]; // default
+    }
+  }
+
+  String _medalGlyph(int rank) {
     switch (rank) {
       case 1:
         return '🥇';
@@ -67,28 +85,41 @@ class _ResultScreenState extends State<ResultScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                photoUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 200,
-                  width: 200,
-                  color: Colors.white,
-                  child: const Icon(Icons.broken_image, size: 48, color: Color(0xff9CA3AF)),
-                ),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const SizedBox(
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  photoUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 200,
                     width: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                },
+                    color: Colors.white,
+                    child: const Icon(Icons.broken_image,
+                        size: 48, color: Color(0xff9CA3AF)),
+                  ),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const SizedBox(
+                      height: 200,
+                      width: 200,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               studentName,
               style: GoogleFonts.inter(
@@ -106,281 +137,442 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 30),
-          const Padding(
-            padding: EdgeInsets.only(left: 12.0),
-            child: Text(
-              "Result",
-              style: TextStyle(color: Color(0xff1F2937), fontWeight: FontWeight.bold, fontSize: 18),
-            ),
+      body: Container(
+        // Soft, colorful backdrop gradient — sets the "not just white"
+        // tone for the whole screen.
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF3F0FF),
+              Color(0xFFFDF2FF),
+              Color(0xFFF6FAFF),
+            ],
+            stops: [0.0, 0.35, 1.0],
           ),
-          const Padding(
-            padding: EdgeInsets.only(left: 12.0),
-            child: Text(
-              "Check out the latest winners",
-              style: TextStyle(color: Color(0xff6B7280), fontWeight: FontWeight.w400, fontSize: 12),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // ---------- Filter row: Program Name / Category / Student Category / Stage Type ----------
-          Consumer<ResultProvider>(
-            builder: (context, resultPro, child) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
                   children: [
-                    _FilterPill(
-                      label: 'Program',
-                      value: resultPro.selectedProgramName,
-                      options: resultPro.programNameOptions,
-                      onChanged: resultPro.setProgramNameFilter,
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6C63FF), Color(0xFFFF6BAA)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.emoji_events_rounded,
+                          color: Colors.white, size: 24),
                     ),
-                    _FilterPill(
-                      label: 'Category',
-                      value: resultPro.selectedCategory,
-                      options: resultPro.categoryOptions,
-                      onChanged: resultPro.setCategoryFilter,
-                    ),
-                    _FilterPill(
-                      label: 'Student Category',
-                      value: resultPro.selectedStudentCategory,
-                      options: resultPro.studentCategoryOptions,
-                      onChanged: resultPro.setStudentCategoryFilter,
-                    ),
-                    _FilterPill(
-                      label: 'Stage Type',
-                      value: resultPro.selectedStageType,
-                      options: resultPro.stageTypeOptions,
-                      onChanged: resultPro.setStageTypeFilter,
-                    ),
-                    if (resultPro.hasActiveFilters)
-                      InkWell(
-                        onTap: resultPro.clearFilters,
-                        borderRadius: BorderRadius.circular(9999),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Color(0xFF4834D4), Color(0xFFFF6B6B)],
+                          ).createShader(bounds),
                           child: Text(
-                            'Clear',
-                            style: TextStyle(
-                              color: Color(0xFFEF4444),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                            "Results",
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 22,
                             ),
                           ),
                         ),
-                      ),
+                        Text(
+                          "Check out the latest winners",
+                          style: GoogleFonts.inter(
+                            color: const Color(0xff6B7280),
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 18),
 
-          // ---------- Results list ----------
-          Expanded(
-            child: Consumer<ResultProvider>(
-              builder: (context, resultPro, child) {
-                if (resultPro.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (resultPro.errorMessage != null) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: SelectableText(
-                        resultPro.errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Color(0xff6B7280)),
-                      ),
-                    ),
-                  );
-                }
-
-                final results = resultPro.results;
-                if (results.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Text(
-                        resultPro.hasActiveFilters
-                            ? 'No results match these filters'
-                            : 'No results published yet',
-                        style: const TextStyle(color: Color(0xff6B7280)),
-                      ),
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: resultPro.fetchResults,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final program = results[index];
-                      final colors = _colorsFor(program.category);
-
-                      return FadeSlideAnimation(
-                        order: index,
-                        from: SlideFrom.bottom,
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 13, left: 13, bottom: 13),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                            color: Colors.white,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  program.programName,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xff1F2937),
-                                  ),
+              // ---------- Filter row ----------
+              Consumer<ResultProvider>(
+                builder: (context, resultPro, child) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _FilterPill(
+                          label: 'Program',
+                          value: resultPro.selectedProgramName,
+                          options: resultPro.programNameOptions,
+                          onChanged: resultPro.setProgramNameFilter,
+                        ),
+                        _FilterPill(
+                          label: 'Category',
+                          value: resultPro.selectedCategory,
+                          options: resultPro.categoryOptions,
+                          onChanged: resultPro.setCategoryFilter,
+                        ),
+                        _FilterPill(
+                          label: 'Student Category',
+                          value: resultPro.selectedStudentCategory,
+                          options: resultPro.studentCategoryOptions,
+                          onChanged: resultPro.setStudentCategoryFilter,
+                        ),
+                        _FilterPill(
+                          label: 'Stage Type',
+                          value: resultPro.selectedStageType,
+                          options: resultPro.stageTypeOptions,
+                          onChanged: resultPro.setStageTypeFilter,
+                        ),
+                        if (resultPro.hasActiveFilters)
+                          InkWell(
+                            onTap: resultPro.clearFilters,
+                            borderRadius: BorderRadius.circular(9999),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
                                 ),
-                                const SizedBox(height: 8),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: colors["bg"],
-                                      border: Border.all(color: colors["border"]!, width: 1),
-                                      borderRadius: BorderRadius.circular(9999),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3),
-                                      child: Text(
-                                        program.category.isEmpty ? '—' : program.category,
-                                        style: TextStyle(
-                                          color: colors["text"],
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
+                                borderRadius: BorderRadius.circular(9999),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF6B6B)
+                                        .withValues(alpha: 0.35),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'Clear',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // ---------- Results list ----------
+              Expanded(
+                child: Consumer<ResultProvider>(
+                  builder: (context, resultPro, child) {
+                    if (resultPro.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF6C63FF)),
+                        ),
+                      );
+                    }
+                    if (resultPro.errorMessage != null) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: SelectableText(
+                            resultPro.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Color(0xff6B7280)),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final results = resultPro.results;
+                    if (results.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            resultPro.hasActiveFilters
+                                ? 'No results match these filters'
+                                : 'No results published yet',
+                            style: const TextStyle(color: Color(0xff6B7280)),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      color: const Color(0xFF6C63FF),
+                      onRefresh: resultPro.fetchResults,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 4, bottom: 20),
+                        itemCount: results.length,
+                        itemBuilder: (context, index) {
+                          final program = results[index];
+                          final gradient = _gradientFor(program.category);
+
+                          return FadeSlideAnimation(
+                            order: index,
+                            from: SlideFrom.bottom,
+                            child: _ResultCard(
+                              program: program,
+                              gradient: gradient,
+                              medalGradient: _medalGradient,
+                              medalGlyph: _medalGlyph,
+                              formatPoints: _formatPoints,
+                              onAvatarTap: (url, name) =>
+                                  _openPhoto(context, url, name),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single program's result card — built with layered shadows (a soft
+/// dark shadow below + a subtle white highlight above) to fake a raised,
+/// "3D" surface, plus a colorful gradient accent bar tied to the category.
+class _ResultCard extends StatelessWidget {
+  final dynamic program; // ProgramResult
+  final List<Color> gradient;
+  final List<Color> Function(int rank) medalGradient;
+  final String Function(int rank) medalGlyph;
+  final String Function(num points) formatPoints;
+  final void Function(String url, String name) onAvatarTap;
+
+  const _ResultCard({
+    required this.program,
+    required this.gradient,
+    required this.medalGradient,
+    required this.medalGlyph,
+    required this.formatPoints,
+    required this.onAvatarTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 14, left: 14, bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        boxShadow: [
+          // Main "drop" shadow — gives the card lift off the page.
+          BoxShadow(
+            color: gradient.last.withValues(alpha: 0.18),
+            blurRadius: 20,
+            spreadRadius: -2,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gradient accent bar along the top — subtle 3D bevel via
+          // a soft inner highlight.
+          Container(
+            height: 6,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              gradient: LinearGradient(
+                colors: gradient,
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  program.programName,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xff1F2937),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: gradient),
+                      borderRadius: BorderRadius.circular(9999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: gradient.last.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4),
+                      child: Text(
+                        program.category.isEmpty ? '—' : program.category,
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...List.generate(program.topEntries.length, (i) {
+                  final entry = program.topEntries[i];
+                  final medalColors = medalGradient(entry.rank);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // ---- Avatar with glowing gradient ring + medal badge ----
+                        GestureDetector(
+                          onTap: () =>
+                              onAvatarTap(entry.photoUrl, entry.studentName),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(colors: medalColors),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: medalColors.last
+                                            .withValues(alpha: 0.45),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: Container(
+                                      color: const Color(0xffF3F4F6),
+                                      child: entry.photoUrl.isNotEmpty
+                                          ? Image.network(
+                                        entry.photoUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                        const Icon(
+                                          Icons.person,
+                                          size: 18,
+                                          color: Color(0xff9CA3AF),
                                         ),
+                                        loadingBuilder:
+                                            (context, child, progress) {
+                                          if (progress == null) {
+                                            return child;
+                                          }
+                                          return const Center(
+                                            child: SizedBox(
+                                              width: 14,
+                                              height: 14,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 1.5),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                          : const Icon(
+                                        Icons.person,
+                                        size: 18,
+                                        color: Color(0xff9CA3AF),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                ...program.topEntries.map(
-                                      (entry) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // ---- Student photo avatar with rank medal stacked bottom-right ----
-                                        GestureDetector(
-                                          onTap: () => _openPhoto(context, entry.photoUrl, entry.studentName),
-                                          child: SizedBox(
-                                            width: 36,
-                                            height: 36,
-                                            child: Stack(
-                                              clipBehavior: Clip.none,
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 16,
-                                                  backgroundColor: const Color(0xffF3F4F6),
-                                                  child: ClipOval(
-                                                    child: entry.photoUrl.isNotEmpty
-                                                        ? Image.network(
-                                                      entry.photoUrl,
-                                                      width: 32,
-                                                      height: 32,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => const Icon(
-                                                        Icons.person,
-                                                        size: 16,
-                                                        color: Color(0xff9CA3AF),
-                                                      ),
-                                                      loadingBuilder: (context, child, progress) {
-                                                        if (progress == null) return child;
-                                                        return const SizedBox(
-                                                          width: 16,
-                                                          height: 16,
-                                                          child: CircularProgressIndicator(strokeWidth: 1.5),
-                                                        );
-                                                      },
-                                                    )
-                                                        : const Icon(
-                                                      Icons.person,
-                                                      size: 16,
-                                                      color: Color(0xff9CA3AF),
-                                                    ),
-                                                  ),
-                                                ),
-                                                // Rank medal badge, pinned to bottom-right corner
-                                                Positioned(
-                                                  top: 2,
-                                                  right: 0,
-                                                  child: Text(
-                                                    _medalFor(entry.rank),
-                                                    style: GoogleFonts.inter(fontSize: 14, height: 1),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              entry.studentName,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                color: const Color(0xff6B7280),
-                                              ),
-                                            ),
-                                            Text(
-                                              entry.teamName,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w400,
-                                                color: const Color(0xff6B7280),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const Spacer(),
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xffFAF5FF),
-                                            borderRadius: BorderRadius.circular(9999),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(5.0),
-                                            child: Text(
-                                              '${_formatPoints(entry.points)} Pts',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: const Color(0xff667EEA),
-                                              ),
-                                            ),
-                                          ),
+                                // Medal badge, pinned to bottom-right — its own
+                                // little gradient chip for a "3D sticker" feel.
+                                Positioned(
+                                  bottom: -2,
+                                  right: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.12),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient:
+                                        LinearGradient(colors: medalColors),
+                                      ),
+                                      child: Text(
+                                        entry.rank <= 3
+                                            ? medalGlyph(entry.rank)
+                                            : '${entry.rank}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: entry.rank <= 3 ? 10 : 9,
+                                          height: 1,
+                                          fontWeight: FontWeight.w800,
+                                          color: entry.rank <= 3
+                                              ? null
+                                              : Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -388,11 +580,67 @@ class _ResultScreenState extends State<ResultScreen> {
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                );
-              },
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                entry.studentName,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xff374151),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                entry.teamName,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xff9CA3AF),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFB9C2FF), Color(0xFF6C63FF)],
+                            ),
+                            borderRadius: BorderRadius.circular(9999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding:
+                            const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            child: Text(
+                              '${formatPoints(entry.points)} Pts',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         ],
@@ -401,8 +649,9 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 }
 
-/// A dropdown styled as a rounded pill, used for each of the independent
-/// result filters (Program / Category / Student Category / Stage Type).
+/// A frosted-glass, gradient-bordered dropdown pill used for each of the
+/// independent result filters (Program / Category / Student Category /
+/// Stage Type).
 class _FilterPill extends StatelessWidget {
   final String label;
   final String? value;
@@ -420,26 +669,50 @@ class _FilterPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = value != null;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFFF1EE) : Colors.white,
         borderRadius: BorderRadius.circular(9999),
-        border: Border.all(color: isActive ? const Color(0xFFFF8E53) : const Color(0xFFE5E7EB)),
+        gradient: isActive
+            ? const LinearGradient(
+          colors: [Color(0xFFFF9A56), Color(0xFFFF6B6B)],
+        )
+            : null,
+        color: isActive ? null : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: isActive
+                ? const Color(0xFFFF6B6B).withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: isActive ? 10 : 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: isActive
+            ? null
+            : Border.all(color: const Color(0xFFE5E7EB)),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
-          hint: Text(label, style: const TextStyle(fontSize: 12, color: Color(0xff4B5563))),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 16,
+            color: isActive ? Colors.white : const Color(0xff4B5563),
+          ),
+          dropdownColor: Colors.white,
+          hint: Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 12, color: const Color(0xff4B5563)),
+          ),
           items: [
             DropdownMenuItem<String?>(value: null, child: Text('All $label')),
             ...options.map((o) => DropdownMenuItem<String?>(value: o, child: Text(o))),
           ],
           onChanged: onChanged,
-          style: TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isActive ? const Color(0xFFFF6B6B) : const Color(0xff4B5563),
+            fontWeight: FontWeight.w700,
+            color: isActive ? Colors.white : const Color(0xff4B5563),
           ),
         ),
       ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -135,11 +137,25 @@ class RegistrationScore {
   void dispose() => controller.dispose();
 }
 
+/// Lightweight scoring-completion summary for one assigned program, used
+/// only to split the Step-1 program list into "Pending" / "Fully Scored"
+/// sections without loading full RegistrationScore objects for every
+/// program up front.
+class ProgramProgress {
+  final int total;
+  final int scored;
+
+  const ProgramProgress({required this.total, required this.scored});
+
+  bool get isComplete => total > 0 && scored >= total;
+}
+
 class JudgeProvider extends ChangeNotifier {
   // ================= Admin: manage judges =================
   final _collection = FirebaseFirestore.instance.collection('judges');
   final _programsCollection = FirebaseFirestore.instance.collection('PROGRAMS');
-
+  int _newlyScoredCount = 0;
+  bool get hasNewScores => _newlyScoredCount > 0;
   List<JudgeModel> judges = [];
   bool isLoading = false;
   bool isSaving = false;
@@ -397,6 +413,14 @@ class JudgeProvider extends ChangeNotifier {
   bool isLoadingPrograms = false;
   String? programsError;
 
+  // ⬅️ NEW: per-program scoring-completion summary, keyed by program id.
+  // Loaded right after assignedPrograms so the Step-1 list can be split
+  // into "Pending" vs "Fully Scored" sections. Loaded in the background
+  // (not awaited by fetchAssignedPrograms) so the program list itself
+  // isn't held up waiting on N registration-count queries.
+  Map<String, ProgramProgress> programProgress = {};
+  bool isLoadingProgramProgress = false;
+
   AssignedProgram? selectedProgram;
   List<RegistrationScore> registrations = [];
   bool isLoadingRegistrations = false;
@@ -426,6 +450,12 @@ class JudgeProvider extends ChangeNotifier {
 
   int get submittedCount => displayedRegistrations.where((r) => r.judged).length;
 
+  /// Whether [program] has every registered student/team already scored,
+  /// based on the cached ProgramProgress. Defaults to false (i.e. shown
+  /// under "Pending") while progress hasn't loaded yet or is unknown.
+  bool isProgramFullyScored(AssignedProgram program) =>
+      programProgress[program.id]?.isComplete ?? false;
+
   Future<void> fetchAssignedPrograms(String judgeId) async {
     if (judgeId.isEmpty) {
       programsError = 'No judge id found — please log in again.';
@@ -446,6 +476,65 @@ class JudgeProvider extends ChangeNotifier {
       isLoadingPrograms = false;
       notifyListeners();
     }
+    // Fire-and-forget: don't block the program list on this.
+    unawaited(_loadProgramProgress());
+  }
+
+  /// Queries registration counts for every assigned program in parallel
+  /// and stores a Pending/Fully-Scored summary for each, so the Step-1
+  /// list can be split without loading full RegistrationScore objects.
+  Future<void> _loadProgramProgress() async {
+    if (assignedPrograms.isEmpty) {
+      programProgress = {};
+      notifyListeners();
+      return;
+    }
+    isLoadingProgramProgress = true;
+    notifyListeners();
+    try {
+      final programs = List<AssignedProgram>.from(assignedPrograms);
+      final results = await Future.wait(programs.map(_fetchProgramProgress));
+      programProgress = {
+        for (var i = 0; i < programs.length; i++) programs[i].id: results[i],
+      };
+    } catch (e) {
+      // Leave programProgress as-is (any programs left unset default to
+      // "Pending" via isProgramFullyScored) rather than surface an error
+      // for what is a secondary, non-blocking bit of UI.
+    } finally {
+      isLoadingProgramProgress = false;
+      notifyListeners();
+    }
+  }
+
+  Future<ProgramProgress> _fetchProgramProgress(AssignedProgram program) async {
+    final snap = await _registrationsCollection
+        .where('PROGRAM_ID', isEqualTo: program.id)
+        .get();
+
+    bool isJudgedStatus(String status) => status == 'Resulted' || status == 'Published';
+
+    if (program.isGeneral) {
+      // Collapse by team, same as displayedRegistrations/saveScore do —
+      // a team counts as scored once any of its registrations are.
+      final teamJudged = <String, bool>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final teamId = (data['TEAM_ID'] ?? '').toString();
+        final judged = isJudgedStatus((data['STATUS'] ?? '').toString());
+        teamJudged[teamId] = (teamJudged[teamId] ?? false) || judged;
+      }
+      return ProgramProgress(
+        total: teamJudged.length,
+        scored: teamJudged.values.where((v) => v).length,
+      );
+    }
+
+    var scored = 0;
+    for (final doc in snap.docs) {
+      if (isJudgedStatus((doc.data()['STATUS'] ?? '').toString())) scored++;
+    }
+    return ProgramProgress(total: snap.docs.length, scored: scored);
   }
 
   Future<void> openProgram(AssignedProgram program) async {
@@ -465,7 +554,7 @@ class JudgeProvider extends ChangeNotifier {
       // no longer shows (or can be re-scored) in the judge panel.
       registrations = snap.docs
           .map(RegistrationScore.fromDoc)
-          .where((r) => r.status != 'Published')
+      // .where((r) => r.status != 'Published')
           .toList()
         ..sort((a, b) => a.registerNumber.compareTo(b.registerNumber));
     } catch (e) {
@@ -482,6 +571,11 @@ class JudgeProvider extends ChangeNotifier {
     }
     registrations = [];
     selectedProgram = null;
+    // Selected program's own progress may now be stale (a score may have
+    // just been saved inside it) — refresh in the background so the
+    // Pending/Fully-Scored split on the list is accurate when we land
+    // back on it.
+    unawaited(_loadProgramProgress());
     notifyListeners();
   }
 
@@ -507,30 +601,65 @@ class JudgeProvider extends ChangeNotifier {
       reg.grade = program.gradeFor(reg.score);
       reg.judged = true;
 
-      final judged = registrations.where((r) => r.judged).toList()
-        ..sort((a, b) => b.score.compareTo(a.score));
+      // General: sync every other registration on the same team (under
+      // this program) to the score/grade just entered.
+      if (program.isGeneral) {
+        final teammates = registrations.where((r) => r.teamId == reg.teamId && r.id != reg.id);
+        for (final mate in teammates) {
+          mate.score = reg.score;
+          mate.grade = reg.grade;
+          mate.judged = true;
+          mate.controller.text = reg.score.toString();
+        }
+      }
+
+      final judgedAll = registrations.where((r) => r.judged).toList();
+
+      // Rank once per team for General (avoids a team competing against
+      // its own other entries); once per student otherwise — unchanged
+      // from before for non-General programs.
+      final List<RegistrationScore> forRanking;
+      if (program.isGeneral) {
+        final seenTeamIds = <String>{};
+        forRanking = [
+          for (final r in judgedAll)
+            if (seenTeamIds.add(r.teamId)) r,
+        ];
+      } else {
+        forRanking = List.of(judgedAll);
+      }
+      forRanking.sort((a, b) => b.score.compareTo(a.score));
 
       int currentRank = 0;
       num? previousScore;
-      for (var i = 0; i < judged.length; i++) {
-        final r = judged[i];
+      for (var i = 0; i < forRanking.length; i++) {
+        final r = forRanking[i];
         if (previousScore == null || r.score != previousScore) {
           currentRank = i + 1;
         }
-        r.rank = currentRank;
         previousScore = r.score;
 
-        r.placePoint = switch (r.rank) {
+        final placePoint = switch (currentRank) {
           1 => program.firstScore,
           2 => program.secondScore,
           3 => program.thirdScore,
           _ => 0,
         };
-        r.totalPoint = program.gradePointFor(r.grade) + r.placePoint;
+        final totalPoint = program.gradePointFor(r.grade) + placePoint;
+
+        // Apply the computed rank/points to this representative — and,
+        // for General, every teammate sharing their TEAM_ID — so every
+        // registration belonging to that team ends up identical.
+        final group = program.isGeneral ? judgedAll.where((x) => x.teamId == r.teamId) : [r];
+        for (final member in group) {
+          member.rank = currentRank;
+          member.placePoint = placePoint;
+          member.totalPoint = totalPoint;
+        }
       }
 
       final batch = FirebaseFirestore.instance.batch();
-      for (final r in judged) {
+      for (final r in judgedAll) {
         batch.update(_registrationsCollection.doc(r.id), {
           'SCORE': r.score,
           'GRADE': r.grade,
@@ -538,11 +667,12 @@ class JudgeProvider extends ChangeNotifier {
           'PLACE_POINT': r.placePoint,
           'POINT': r.totalPoint,
           'JUDGED_BY': judgeId,
-          'STATUS':"Resulted",
+          'STATUS': "Resulted",
           'judgedAt': FieldValue.serverTimestamp(),
         });
       }
       await batch.commit();
+      _newlyScoredCount++;
       notifyListeners();
       return null;
     } catch (e) {

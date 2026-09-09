@@ -34,7 +34,7 @@ class StudentIdCardPdf {
   static const double _cardBorderWidth = 0.7;
 
   static const double _avatarSize = 58;
-  static const double _avatarRadius = 30;
+  static const double _avatarRadius = 10;
 
   static const double _gapAfterAvatar = 5;
   static const double _gapAfterCategory = 2;

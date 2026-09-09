@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:meeras_fest_app/registration/photo_crop_screen.dart';
 import 'package:meeras_fest_app/registration/registration_model.dart';
 
 import '../admin/models/categoryModel.dart';
@@ -824,5 +825,96 @@ class RegistrationProvider extends ChangeNotifier {
     }
 
     return Uint8List.fromList(img.encodeJpg(resized, quality: 85));
+  }
+  /// Opens the gallery picker, sends the picked image to [PhotoCropScreen],
+  /// compresses the cropped result, and uploads it — same storage path /
+  /// Firestore field as before. Returns an error message on failure, or
+  /// null on success / user cancellation at any step.
+  Future<String?> pickCropAndUploadStudentPhoto(BuildContext context, String studentId) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 95, // crop happens after, so keep quality high going in
+      );
+      if (file == null) return null; // user cancelled picker
+
+      final rawBytes = await file.readAsBytes();
+      if (!context.mounted) return null;
+
+      final Uint8List? cropped = await Navigator.of(context).push<Uint8List>(
+        MaterialPageRoute(builder: (_) => PhotoCropScreen(imageBytes: rawBytes)),
+      );
+      if (cropped == null) return null; // user backed out of crop screen
+
+      final compressed = _compressPhoto(cropped);
+      return _uploadPhotoBytes(studentId, compressed);
+    } catch (e) {
+      return 'Failed to update photo: $e';
+    }
+  }
+
+  /// Shared upload step, used by [pickCropAndUploadStudentPhoto]. Uploads
+  /// [bytes] to Storage, writes the download URL to Firestore, then
+  /// re-fetches that one student doc so [teamStudents] reflects it live.
+  Future<String?> _uploadPhotoBytes(String studentId, Uint8List bytes) async {
+    try {
+      photoUploadProgress[studentId] = 0;
+      notifyListeners();
+
+      final storagePath = '$_photoStorageFolder/$studentId.jpg';
+      final ref = _storage.ref().child(storagePath);
+      final uploadTask = ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+
+      uploadTask.snapshotEvents.listen((event) {
+        if (event.totalBytes > 0) {
+          photoUploadProgress[studentId] = event.bytesTransferred / event.totalBytes;
+          notifyListeners();
+        }
+      });
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      await _studentsCollection.doc(studentId).update({'PHOTO_URL': downloadUrl});
+
+      await _refreshStudent(studentId);
+      return null;
+    } catch (e) {
+      return 'Failed to upload photo: $e';
+    } finally {
+      photoUploadProgress.remove(studentId);
+      notifyListeners();
+    }
+  }
+
+  /// Deletes the student's photo from Storage (ignoring "not found" errors,
+  /// since the object may already be gone) and clears PHOTO_URL in Firestore.
+  Future<String?> deleteStudentPhoto(String studentId) async {
+    try {
+      final storagePath = '$_photoStorageFolder/$studentId.jpg';
+      try {
+        await _storage.ref().child(storagePath).delete();
+      } on FirebaseException catch (e) {
+        if (e.code != 'object-not-found') rethrow;
+      }
+
+      await _studentsCollection.doc(studentId).update({'PHOTO_URL': FieldValue.delete()});
+      await _refreshStudent(studentId);
+      return null;
+    } catch (e) {
+      return 'Failed to delete photo: $e';
+    }
+  }
+
+  /// Re-fetches a single student doc and swaps it into [teamStudents], so
+  /// callers don't need to guess how to null out fields via copyWith.
+  Future<void> _refreshStudent(String studentId) async {
+    final freshDoc = await _studentsCollection.doc(studentId).get();
+    if (!freshDoc.exists) return;
+    final index = teamStudents.indexWhere((s) => s.id == studentId);
+    if (index != -1) {
+      teamStudents[index] = StudentModel.fromDoc(freshDoc);
+    }
+    notifyListeners();
   }
 }

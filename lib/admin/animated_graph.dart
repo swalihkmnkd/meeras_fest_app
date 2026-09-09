@@ -107,15 +107,18 @@ class AnimatedBarGraph extends StatelessWidget {
                     ),
 
                     // Leader name
-                    Text(
-                      entry.leaderName,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xff6B7280),
+                    SizedBox(
+                      height: 30,
+                      child: Text(
+                        entry.leaderName,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xff6B7280),
+                        ),
                       ),
                     ),
                   ],

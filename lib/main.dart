@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:meeras_fest_app/admin/providers/adminProvider.dart';
 import 'package:meeras_fest_app/admin/providers/categoryProvider.dart';
 import 'package:meeras_fest_app/home/home_provider.dart';
@@ -49,11 +50,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Base theme, then swap in Poppins for every text style so any widget
+    // that doesn't set its own font (Text, AppBar titles, buttons, etc.)
+    // falls back to Poppins instead of the platform default.
+    final baseTheme = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    );
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'മീം മീറാസ് ഫെസ്റ്റ് SEASON 5',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      theme: baseTheme.copyWith(
+        textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme),
+        primaryTextTheme: GoogleFonts.poppinsTextTheme(baseTheme.primaryTextTheme),
       ),
       home: SplashScreen(),
     );

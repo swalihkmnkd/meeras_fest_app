@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 
 /// One ranked student under a program's results (top 3 by RANK).
 class RankedEntry {
+  final String studentId; // ⬅️ NEW — needed to aggregate a student's best rank across programs, for the Poster feature
   final String studentName;
   final String teamName;
   final int rank;
   final num points;
-  final String studentCategory; // STUDENT_CATEGORY, e.g. "Sub Junior" / "Senior"
-  final String photoUrl; // STUDENTS.PHOTO_URL, joined via STUDENT_ID
+  final String studentCategory;
+  final String photoUrl;
 
   RankedEntry({
+    required this.studentId, // ⬅️ NEW
     required this.studentName,
     required this.teamName,
     required this.rank,
@@ -47,7 +49,31 @@ class ProgramResult {
     topEntries: entries,
   );
 }
+/// One student's single best (lowest-numbered) rank across every
+/// published result — powers the Poster feature's automatic rank
+/// detection (spec §2/§5). Built from data ResultProvider already holds,
+/// so no extra Firestore reads are needed.
+class StudentBestResult {
+  final String studentId;
+  final String studentName;
+  final String teamName;
+  final String photoUrl;
+  final String studentCategory;
+  final int bestRank;
+  final num points;
+  final String programName;
 
+  StudentBestResult({
+    required this.studentId,
+    required this.studentName,
+    required this.teamName,
+    required this.photoUrl,
+    required this.studentCategory,
+    required this.bestRank,
+    required this.points,
+    required this.programName,
+  });
+}
 class ResultProvider extends ChangeNotifier {
   final _programsCollection = FirebaseFirestore.instance.collection('PROGRAMS');
   final _registrationsCollection = FirebaseFirestore.instance.collection('REGISTRATIONS');
@@ -82,7 +108,29 @@ class ResultProvider extends ChangeNotifier {
       .toSet()
       .toList()
     ..sort());
-
+  List<StudentBestResult> get studentBestResults {
+    final byStudent = <String, StudentBestResult>{};
+    for (final program in _allResults) {
+      for (final entry in program.topEntries) {
+        if (entry.studentId.isEmpty) continue;
+        final existing = byStudent[entry.studentId];
+        if (existing == null || entry.rank < existing.bestRank) {
+          byStudent[entry.studentId] = StudentBestResult(
+            studentId: entry.studentId,
+            studentName: entry.studentName,
+            teamName: entry.teamName,
+            photoUrl: entry.photoUrl,
+            studentCategory: entry.studentCategory,
+            bestRank: entry.rank,
+            points: entry.points,
+            programName: program.programName,
+          );
+        }
+      }
+    }
+    final list = byStudent.values.toList()..sort((a, b) => a.bestRank.compareTo(b.bestRank));
+    return list;
+  }
   /// Results after applying whichever filters are currently set. Any
   /// combination can be active at once — all must match.
   ///
@@ -196,6 +244,100 @@ class ResultProvider extends ChangeNotifier {
           final teamId = (data['TEAM_ID'] ?? '').toString();
           final studentId = (data['STUDENT_ID'] ?? '').toString();
           return RankedEntry(
+            studentId: studentId, // ⬅️ NEW
+            studentName: (data['STUDENT_NAME'] ?? '').toString(),
+            teamName: teamNames[teamId] ?? teamId,
+            rank: rank,
+            points: (data['POINT'] ?? 0) as num,
+            studentCategory: (data['STUDENT_CATEGORY'] ?? '').toString(),
+            photoUrl: studentPhotos[studentId] ?? '',
+          );
+        }).where((e) => e.rank > 0).toList()
+          ..sort((a, b) => a.rank.compareTo(b.rank));
+
+        if (entries.isEmpty) continue; // only unjudged / RANK<=0 entries — skip
+
+        final programData = programDoc.data();
+        results.add(ProgramResult(
+          programId: programDoc.id,
+          programName: (programData['PROGRAM_NAME'] ?? '').toString(),
+          category: (programData['PROGRAM_CATEGORY'] ?? '').toString(),
+          stageType: (programData['STAGE_TYPE'] ?? '').toString(),
+          topEntries: entries.take(3).toList(),
+        ));
+      }
+
+      results.sort((a, b) => a.programName.compareTo(b.programName));
+      _allResults = results;
+      errorMessage = null;
+    } catch (e) {
+      errorMessage = 'Failed to load results: $e';
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+  Future<void> fetchResultsPoster() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      // ⬅️ FIXED: only filter by STATUS in the Firestore query. The
+      // previous version also chained `.where('RANK', isGreaterThan: 0)`,
+      // which (a) requires a composite (STATUS, RANK) index — without one
+      // Firestore throws failed-precondition and this fetch fails outright
+      // — and (b) silently drops any doc where RANK isn't stored as a
+      // numeric type, since Firestore range filters don't coerce types.
+      // RANK is already parsed defensively below and filtered to > 0 in
+      // memory, so the Firestore-side range filter was both fragile and
+      // redundant. A single equality filter needs no composite index.
+      final results0 = await Future.wait([
+        _programsCollection.get(),
+        _registrationsCollection.where('STATUS', isEqualTo: 'Published').where("IS_GENERAL",isNotEqualTo: true).get(),
+        _teamsCollection.get(),
+        _studentsCollection.get(),
+      ]);
+
+      final programsSnap = results0[0];
+      final registrationsSnap = results0[1];
+      final teamsSnap = results0[2];
+      final studentsSnap = results0[3];
+
+      final teamNames = {
+        for (final d in teamsSnap.docs)
+          d.id: ((d.data() as Map<String, dynamic>)['NAME'] ??
+              (d.data() as Map<String, dynamic>)['TEAM_NAME'] ??
+              '')
+              .toString(),
+      };
+
+      // STUDENT_ID -> PHOTO_URL, so ranked entries can show the student's photo.
+      final studentPhotos = {
+        for (final d in studentsSnap.docs)
+          d.id: ((d.data() as Map<String, dynamic>)['PHOTO_URL'] ?? '').toString(),
+      };
+
+      final byProgram = <String, List<QueryDocumentSnapshot<Map<String, dynamic>>>>{};
+      for (final doc in registrationsSnap.docs) {
+        final programId = (doc.data()['PROGRAM_ID'] ?? '').toString();
+        if (programId.isEmpty) continue;
+        byProgram.putIfAbsent(programId, () => []).add(doc);
+      }
+
+      final results = <ProgramResult>[];
+      for (final programDoc in programsSnap.docs) {
+        final regs = byProgram[programDoc.id];
+        if (regs == null || regs.isEmpty) continue; // no results yet — skip entirely
+
+        final entries = regs.map((doc) {
+          final data = doc.data();
+          final rank = data['RANK'] is int
+              ? data['RANK'] as int
+              : int.tryParse('${data['RANK']}') ?? 0;
+          final teamId = (data['TEAM_ID'] ?? '').toString();
+          final studentId = (data['STUDENT_ID'] ?? '').toString();
+          return RankedEntry(
+            studentId: studentId, // ⬅️ NEW
             studentName: (data['STUDENT_NAME'] ?? '').toString(),
             teamName: teamNames[teamId] ?? teamId,
             rank: rank,
