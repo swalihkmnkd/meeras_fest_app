@@ -24,11 +24,9 @@ class _StudentPosterListScreenState extends State<StudentPosterListScreen> {
   void initState() {
     super.initState();
     final provider = context.read<ResultProvider>();
-    if (provider.studentBestResults.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) provider.fetchResultsPoster();
       });
-    }
   }
 
   @override

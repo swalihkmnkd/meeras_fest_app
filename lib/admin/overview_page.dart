@@ -3,6 +3,7 @@ import 'package:meeras_fest_app/admin/providers/curosel_provider.dart';
 import 'package:meeras_fest_app/admin/providers/resultProvider.dart';
 import 'package:meeras_fest_app/admin/registration_setting_page.dart';
 import 'package:meeras_fest_app/admin/resultReviewPage.dart';
+import 'package:meeras_fest_app/admin/tvScoreboardPage.dart';
 import 'package:meeras_fest_app/stage_manager/stageManagerAdminProvider.dart';
 import 'package:meeras_fest_app/stage_manager/stageManagerListPage.dart';
 import 'package:provider/provider.dart';
@@ -172,6 +173,17 @@ class _OverviewView extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const PosterTemplatesHomePage()),
+                        ),
+                      ),
+                      AdminActionCard(
+                        count: '', // no meaningful count for this one — leave blank
+                        title: "TV Scoreboard",
+                        subtitle: "Open live scoreboard",
+                        icon: Icons.tv_rounded,
+                        color: const Color(0xFF14B8A6),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TvScoreboardPage()),
                         ),
                       ),
                     ],

@@ -148,6 +148,7 @@ class HomeScreen extends StatelessWidget {
                                       ),
                                       child: Center(
                                         child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -172,7 +173,7 @@ class HomeScreen extends StatelessWidget {
                                                           child: CircleAvatar(
                                                             backgroundColor:
                                                             Colors.white.withValues(alpha: 0.7),
-                                                            radius: 18,
+                                                            radius: 15,
                                                             child: const Icon(Icons.login_rounded,
                                                                 size: 18, color: Color(0xff667EEA)),
                                                           ),
@@ -182,43 +183,7 @@ class HomeScreen extends StatelessWidget {
                                                 ),
                                               ],
                                             ),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                ShaderMask(
-                                                  shaderCallback: (bounds) {
-                                                    return const LinearGradient(
-                                                      colors: [
-                                                        Color(0xFFFF6B6B),
-                                                        Color(0xFFFF8E53),
-                                                        Color(0xFF667EEA),
-                                                      ],
-                                                      stops: [0.0, 0.5, 1.0],
-                                                      begin: Alignment.centerLeft,
-                                                      end: Alignment.centerRight,
-                                                    ).createShader(bounds);
-                                                  },
-                                                  child: Text(
-                                                    "മീറാസ് ഫെസ്റ്റ്",
-                                                    style: GoogleFonts.notoSansMalayalam(
-                                                      fontSize: 25,
-                                                      fontWeight: FontWeight.w800,
-                                                      letterSpacing: 0.5,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  " SEASON 5",
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.5,
-                                                    color: Colors.black54,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                            Image.asset("assets/images/thoofan.PNG",height: 80,),
                                             Text(
                                               textAlign: TextAlign.center,
                                               "Meerasul Ambiya Higher secondary Madrassa\nOravampuram",
@@ -1013,57 +978,56 @@ class _RewardGifOverlayState extends State<RewardGifOverlay>
                                   // modalHeight leaves little vertical room,
                                   // so this content now scrolls instead of
                                   // overflowing/clipping off the bottom.
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      padding: const EdgeInsets.fromLTRB(22, 8, 22, 22),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            widget.eyebrow,
-                                            style: GoogleFonts.inter(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white70,
-                                            ),
+                                  Spacer(),
+                                  SingleChildScrollView(
+                                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 22),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          widget.eyebrow,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
                                           ),
-                                          const SizedBox(height: 10),
-                                          // One card per standings category
-                                          // (e.g. Girls, Boys), side by side
-                                          // when there's more than one.
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              for (int i = 0; i < widget.entries.length; i++) ...[
-                                                if (i > 0) const SizedBox(width: 10),
-                                                Expanded(child: _LeaderBlock(entry: widget.entries[i])),
-                                              ],
+                                        ),
+                                        const SizedBox(height:100),
+                                        // One card per standings category
+                                        // (e.g. Girls, Boys), side by side
+                                        // when there's more than one.
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            for (int i = 0; i < widget.entries.length; i++) ...[
+                                              if (i > 0) const SizedBox(width: 10),
+                                              Expanded(child: _LeaderBlock(entry: widget.entries[i])),
                                             ],
-                                          ),
-                                          const SizedBox(height: 18),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: ElevatedButton(
-                                              onPressed: _minimize,
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.white,
-                                                foregroundColor: const Color(0xff1F2937),
-                                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(30),
-                                                ),
-                                                elevation: 0,
+                                          ],
+                                        ),
+                                        const SizedBox(height: 18),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton(
+                                            onPressed: _minimize,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: const Color(0xff1F2937),
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(30),
                                               ),
-                                              child: Text(
-                                                widget.buttonLabel,
-                                                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                                              ),
+                                              elevation: 0,
+                                            ),
+                                            child: Text(
+                                              widget.buttonLabel,
+                                              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -1318,7 +1282,7 @@ class _LiveProgramCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 190,
+      width: 200,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -1356,7 +1320,7 @@ class _LiveProgramCard extends StatelessWidget {
           ),
           Text(
             program.programName,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
               fontSize: 14,

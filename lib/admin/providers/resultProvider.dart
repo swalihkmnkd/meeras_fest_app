@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 
 import '../models/programModel.dart';
 
-/// One judged-but-not-yet-published registration, editable by the admin
-/// before publishing.
+/// One judged registration — either still pending ('Resulted') or already
+/// live ('Published') — editable by the admin either way.
 class PendingResult {
   final String id; // REGISTRATIONS doc id
   final String programId;
   final String programName;
   final String studentName;
   final String teamId;
-  final String teamName; // ⬅️ NEW — joined from TEAMS, shown instead of studentName for General programs
+  final String teamName; // joined from TEAMS, shown instead of studentName for General programs
   final String registerNumber;
   final bool isGeneral;
   num score;
@@ -19,6 +19,10 @@ class PendingResult {
   int? rank;
   num placePoint;
   num totalPoint;
+  // ⬅️ NEW — 'Resulted' or 'Published'. Drives which tab this row shows
+  // under; flipped locally (no re-fetch needed) whenever publish/republish
+  // succeeds.
+  String status;
   final TextEditingController scoreController;
 
   PendingResult({
@@ -27,7 +31,7 @@ class PendingResult {
     required this.programName,
     required this.studentName,
     required this.teamId,
-    required this.teamName, // ⬅️ NEW
+    required this.teamName,
     required this.registerNumber,
     required this.isGeneral,
     required this.score,
@@ -35,7 +39,10 @@ class PendingResult {
     required this.rank,
     required this.placePoint,
     required this.totalPoint,
+    required this.status, // ⬅️ NEW
   }) : scoreController = TextEditingController(text: score.toString());
+
+  bool get isPublished => status == 'Published';
 
   /// [teamNames] maps TEAM_ID -> team name, resolved once per fetch (see
   /// ResultsPublishProvider.fetchPending) rather than re-queried per doc.
@@ -51,7 +58,7 @@ class PendingResult {
       programName: (data['PROGRAM_NAME'] ?? '').toString(),
       studentName: (data['STUDENT_NAME'] ?? '').toString(),
       teamId: teamId,
-      teamName: teamNames[teamId] ?? teamId, // ⬅️ NEW
+      teamName: teamNames[teamId] ?? teamId,
       registerNumber: (data['REGISTER_NUMBER'] ?? '').toString(),
       isGeneral: data['IS_GENERAL'] == true,
       score: (data['SCORE'] ?? 0) as num,
@@ -59,6 +66,7 @@ class PendingResult {
       rank: data['RANK'] is int ? data['RANK'] as int : null,
       placePoint: (data['PLACE_POINT'] ?? 0) as num,
       totalPoint: (data['POINT'] ?? 0) as num,
+      status: (data['STATUS'] ?? '').toString(), // ⬅️ NEW
     );
   }
 
@@ -87,8 +95,9 @@ class _RankRow {
   });
 }
 
-/// A program's worth of pending results, grouped so the whole program
-/// publishes together — never just one student's row.
+/// A program's worth of results (pending OR published — the caller
+/// decides which by pre-filtering), grouped so the whole program
+/// publishes/republishes together — never just one student's row.
 class ProgramResultsGroup {
   final String programId;
   final String programName;
@@ -121,8 +130,12 @@ class ProgramResultsGroup {
 class ResultsPublishProvider extends ChangeNotifier {
   final _registrationsCollection = FirebaseFirestore.instance.collection('REGISTRATIONS');
   final _programsCollection = FirebaseFirestore.instance.collection('PROGRAMS');
-  final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS'); // ⬅️ NEW
+  final _teamsCollection = FirebaseFirestore.instance.collection('TEAMS');
 
+  // ⬅️ RENAMED IN SPIRIT ONLY (kept the field name `pendingResults` so
+  // nothing else that reads it needs churn) — this now holds BOTH
+  // 'Resulted' and 'Published' registrations together. Use
+  // pendingByProgram / publishedByProgram below to see just one status.
   List<PendingResult> pendingResults = [];
   Map<String, ProgramModel> _programsById = {};
   bool isLoading = false;
@@ -134,12 +147,9 @@ class ResultsPublishProvider extends ChangeNotifier {
   final Map<String, bool> _savingEdit = {};
   bool isSavingEdit(String id) => _savingEdit[id] ?? false;
 
-  /// Pending results grouped by program, so the UI shows the program name
-  /// once with every student under it, and publishes them as one unit — a
-  /// program can no longer end up partially published.
-  List<ProgramResultsGroup> get pendingByProgram {
+  List<ProgramResultsGroup> _groupBy(Iterable<PendingResult> rows) {
     final byProgram = <String, List<PendingResult>>{};
-    for (final r in pendingResults) {
+    for (final r in rows) {
       byProgram.putIfAbsent(r.programId, () => []).add(r);
     }
     final groups = byProgram.entries
@@ -153,22 +163,40 @@ class ResultsPublishProvider extends ChangeNotifier {
     return groups;
   }
 
+  /// Still-pending results grouped by program — same shape/behavior as
+  /// before this change, just now filtered out of a combined list rather
+  /// than being the only thing fetched.
+  List<ProgramResultsGroup> get pendingByProgram =>
+      _groupBy(pendingResults.where((r) => r.status != 'Published'));
+
+  /// ⬅️ NEW — already-live results grouped by program, so the admin can
+  /// review what's currently on the TV/app and, if needed, edit a score
+  /// and republish.
+  List<ProgramResultsGroup> get publishedByProgram =>
+      _groupBy(pendingResults.where((r) => r.status == 'Published'));
+
+  /// Whether "Publish All" (which only ever touches still-pending rows)
+  /// has anything to do.
+  bool get hasPendingResults => pendingByProgram.isNotEmpty;
+
   Future<void> fetchPending() async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
     try {
       final results0 = await Future.wait([
-        _registrationsCollection.where('STATUS', isEqualTo: 'Resulted').get(),
+        // ⬅️ CHANGED — fetch both statuses in one query instead of just
+        // 'Resulted', so published results are visible (and editable) too.
+        _registrationsCollection.where('STATUS', whereIn: ['Resulted', 'Published']).get(),
         _programsCollection.get(),
-        _teamsCollection.get(), // ⬅️ NEW
+        _teamsCollection.get(),
       ]);
 
       final snap = results0[0] as QuerySnapshot<Map<String, dynamic>>;
       final programSnap = results0[1] as QuerySnapshot<Map<String, dynamic>>;
       final teamsSnap = results0[2] as QuerySnapshot<Map<String, dynamic>>;
 
-      // ⬅️ NEW — TEAM_ID -> name, same join pattern ResultProvider uses.
+      // TEAM_ID -> name, same join pattern ResultProvider uses.
       final teamNames = {
         for (final d in teamsSnap.docs)
           d.id: (d.data()['NAME'] ?? d.data()['TEAM_NAME'] ?? '').toString(),
@@ -247,24 +275,34 @@ class ResultsPublishProvider extends ChangeNotifier {
   /// mirroring JudgeProvider.saveScore. Non-general programs are
   /// unaffected: ranking stays per-registration exactly as before.
   ///
+  /// ⬅️ FIXED — previously, if this program had no matching ProgramModel
+  /// in `_programsById` (e.g. a PROGRAM_ID mismatch, or the program doc
+  /// was missing/deleted), this method took an early "no grading rules
+  /// available" shortcut that saved SCORE alone and returned — skipping
+  /// the entire re-rank pass. That meant RANK never updated even for a
+  /// maximum/top score, because rank was silently never recomputed.
+  /// Rank is purely a function of relative score and never actually
+  /// depended on program config, so the ranking pass below now always
+  /// runs regardless of whether `program` resolves. Only grade and
+  /// place-points (which DO need program thresholds) fall back to
+  /// blank/zero when program config is missing — rank is unaffected.
+  ///
   /// STATUS is intentionally left untouched for every row: this can
   /// re-rank a mix of 'Resulted' and already-'Published' registrations
   /// (since a swapped rank affects the whole program, not just the row
   /// being edited) without silently publishing or un-publishing anything.
+  /// If a published program's scores change here, use publishProgram()
+  /// (shown as "Republish" in the UI for already-published groups) to
+  /// push the edited values live — they're already saved either way, but
+  /// republishing is the deliberate "yes, show this update" step.
   Future<String?> saveEdit(PendingResult result) async {
     _savingEdit[result.id] = true;
     notifyListeners();
     try {
+      // May be null if this program's config wasn't found (mismatched or
+      // missing PROGRAM_ID). No longer short-circuits ranking — see note
+      // above. Grade/place-point calculation below degrades gracefully.
       final program = _programsById[result.programId];
-      if (program == null) {
-        // No grading rules available — fall back to a plain single-row save.
-        await _registrationsCollection.doc(result.id).update({
-          'SCORE': result.score,
-          'GRADE': result.grade,
-          'POINT': result.totalPoint,
-        });
-        return null;
-      }
 
       final snap = await _registrationsCollection
           .where('PROGRAM_ID', isEqualTo: result.programId)
@@ -273,11 +311,15 @@ class ResultsPublishProvider extends ChangeNotifier {
       final rows = <_RankRow>[];
       for (final doc in snap.docs) {
         final data = doc.data();
-        final judgedBy = (data['JUDGED_BY'] ?? '').toString();
-        // Only re-rank registrations that have actually been judged —
-        // plus the row being edited, in case it's somehow missing that flag.
-        if (judgedBy.isEmpty && doc.id != result.id) continue;
-
+        // ⬅️ FIXED — previously skipped any sibling whose JUDGED_BY was
+        // empty (unless it was the row being edited), which silently
+        // excluded scores entered directly on this admin screen (not via
+        // the Judge panel) from the ranking pool. Excluded rows never got
+        // their RANK rewritten, so they kept stale values forever, and
+        // the remaining pool could rank two different scores as tied.
+        // Every registration returned for this PROGRAM_ID is already
+        // 'Resulted' or 'Published' (see fetchPending's query), so all of
+        // them belong in the ranking pool — no JUDGED_BY gate needed here.
         final teamId = (data['TEAM_ID'] ?? '').toString();
         // General: every registration on the edited student's team gets
         // synced to the score just entered — one card represents the
@@ -306,54 +348,84 @@ class ResultsPublishProvider extends ChangeNotifier {
 
       int currentRank = 0;
       num? previousScore;
-      final rankByTeamId = <String, int>{};
-      final gradeByTeamId = <String, String>{};
-      final placePointByTeamId = <String, num>{};
-      final totalPointByTeamId = <String, num>{};
+      // ⬅️ CHANGED — dense ranking: the next distinct score always
+      // advances the rank by exactly 1 (1,1,2,2,3), instead of skipping
+      // ahead by the size of the previous tie group (1,1,3,3,5). Only the
+      // "does the score differ from the previous one" check matters here;
+      // the increment itself no longer depends on the row's index `i`.
+      // ⬅️ FIXED — previously these maps were ALWAYS keyed by `r.teamId`,
+      // even for non-General (individual) programs. For an individual
+      // program, `teamId` is just the student's real-life house/team —
+      // completely unrelated to competition grouping — so two different
+      // students who happen to belong to the same house would collide on
+      // the same map key. Whichever of them was processed last in this
+      // loop silently overwrote the other's rank/grade/points, which is
+      // exactly why unrelated students with different scores ended up
+      // sharing one rank. Only General programs should share a key across
+      // multiple registrations (one shared team result); individual
+      // programs must key by each registration's own id.
+      String keyFor(_RankRow r) => result.isGeneral ? r.teamId : r.id;
+
+      final rankByKey = <String, int>{};
+      final gradeByKey = <String, String>{};
+      final placePointByKey = <String, num>{};
+      final totalPointByKey = <String, num>{};
 
       for (var i = 0; i < forRanking.length; i++) {
         final r = forRanking[i];
         if (previousScore == null || r.score != previousScore) {
-          currentRank = i + 1;
+          currentRank = previousScore == null ? 1 : currentRank + 1;
         }
         previousScore = r.score;
 
-        String grade;
-        if (r.score >= program.aGradeStart) {
-          grade = 'A';
-        } else if (r.score >= program.bGradeStart) {
-          grade = 'B';
-        } else if (r.score >= program.cGradeStart) {
-          grade = 'C';
-        } else {
-          grade = '';
-        }
-        final gradePoint = switch (grade) {
-          'A' => program.aGradePoint,
-          'B' => program.bGradePoint,
-          'C' => program.cGradePoint,
-          _ => 0,
-        };
-        final placePoint = switch (currentRank) {
-          1 => program.firstScore,
-          2 => program.secondScore,
-          3 => program.thirdScore,
-          _ => 0,
-        };
+        // Grade/place-point/total-point need program thresholds — degrade
+        // to blank/zero if program config is missing. RANK above does NOT
+        // depend on any of this; it's already been assigned from pure
+        // score ordering regardless of `program`.
+        String grade = '';
+        num gradePoint = 0;
+        num placePoint = 0;
 
-        rankByTeamId[r.teamId] = currentRank;
-        gradeByTeamId[r.teamId] = grade;
-        placePointByTeamId[r.teamId] = placePoint;
-        totalPointByTeamId[r.teamId] = gradePoint + placePoint;
+        if (program != null) {
+          if (r.score >= program.aGradeStart) {
+            grade = 'A';
+          } else if (r.score >= program.bGradeStart) {
+            grade = 'B';
+          } else if (r.score >= program.cGradeStart) {
+            grade = 'C';
+          }
+          gradePoint = switch (grade) {
+            'A' => program.aGradePoint,
+            'B' => program.bGradePoint,
+            'C' => program.cGradePoint,
+            _ => 0,
+          };
+          placePoint = switch (currentRank) {
+            1 => program.firstScore,
+            2 => program.secondScore,
+            3 => program.thirdScore,
+            _ => 0,
+          };
+        }
+
+        final key = keyFor(r);
+        rankByKey[key] = currentRank;
+        gradeByKey[key] = grade;
+        placePointByKey[key] = placePoint;
+        totalPointByKey[key] = gradePoint + placePoint;
       }
 
-      // Apply the computed (per-team, for General) values back onto every
-      // row so all of a team's registrations end up identical.
+      // Apply the computed values back onto every row. For General
+      // programs every registration on the same team shares its team's
+      // key and therefore its team's values, by design. For individual
+      // programs each row has its own unique key (its own id), so each
+      // student's own rank/grade/points are applied — never a teammate's.
       for (final r in rows) {
-        r.rank = rankByTeamId[r.teamId] ?? 0;
-        r.grade = gradeByTeamId[r.teamId] ?? '';
-        r.placePoint = placePointByTeamId[r.teamId] ?? 0;
-        r.totalPoint = totalPointByTeamId[r.teamId] ?? 0;
+        final key = keyFor(r);
+        r.rank = rankByKey[key] ?? 0;
+        r.grade = gradeByKey[key] ?? '';
+        r.placePoint = placePointByKey[key] ?? 0;
+        r.totalPoint = totalPointByKey[key] ?? 0;
       }
 
       final batch = FirebaseFirestore.instance.batch();
@@ -366,9 +438,9 @@ class ResultsPublishProvider extends ChangeNotifier {
           'POINT': r.totalPoint,
         });
 
-        // Keep any other still-visible pending cards in sync so the admin
-        // sees the rank swap immediately, without a full re-fetch. This
-        // also updates hidden teammate entries in pendingResults, so
+        // Keep any other still-visible cards (pending OR published) in
+        // sync so the admin sees the rank swap immediately, without a
+        // full re-fetch. This also updates hidden teammate entries, so
         // publishProgram()/publishAll() publish their already-synced
         // values even though only one card was shown for them.
         final match = pendingResults.where((p) => p.id == r.id);
@@ -393,11 +465,17 @@ class ResultsPublishProvider extends ChangeNotifier {
     }
   }
 
-  /// Publishes every currently-pending ('Resulted') registration under
-  /// [programId] together, in one batch — so a program is never left
-  /// partially published (some students published, others still pending).
-  /// Operates on every real registration (via pendingResults), not just
-  /// the visible General-collapsed cards.
+  /// Publishes (or **republishes**, if already live) every registration
+  /// under [programId] together, in one batch — so a program is never
+  /// left partially published. Safe to call again on an already-
+  /// published program: it just re-affirms STATUS: 'Published' and stamps
+  /// a fresh REPUBLISHED_AT, which is what pushes an edited score out to
+  /// the TV/app after the admin changes it post-publish.
+  ///
+  /// ⬅️ CHANGED — no longer removes rows from `pendingResults`. Instead it
+  /// flips each row's local `status` to 'Published', which is what moves
+  /// the program from the Pending tab to the Published tab (and keeps it
+  /// there, still editable, if it was already published).
   Future<String?> publishProgram(String programId) async {
     final group = pendingResults.where((r) => r.programId == programId).toList();
     if (group.isEmpty) return null;
@@ -405,15 +483,22 @@ class ResultsPublishProvider extends ChangeNotifier {
     _publishingProgram[programId] = true;
     notifyListeners();
     try {
+      final wasAlreadyPublished = group.every((r) => r.status == 'Published');
       final batch = FirebaseFirestore.instance.batch();
       for (final r in group) {
-        batch.update(_registrationsCollection.doc(r.id), {'STATUS': 'Published'});
+        batch.update(_registrationsCollection.doc(r.id), {
+          'STATUS': 'Published',
+          // Only stamped on a genuine republish (editing after going
+          // live) — leaves the original PUBLISHED_AT-style timestamp
+          // from JudgeProvider/first publish untouched otherwise.
+          if (wasAlreadyPublished) 'REPUBLISHED_AT': FieldValue.serverTimestamp(),
+        });
       }
       await batch.commit();
       for (final r in group) {
-        pendingResults.remove(r);
-        r.dispose();
+        r.status = 'Published';
       }
+      notifyListeners();
       return null;
     } catch (e) {
       return 'Failed to publish program: $e';
@@ -423,21 +508,23 @@ class ResultsPublishProvider extends ChangeNotifier {
     }
   }
 
-  /// Publishes everything currently pending, across every program, in one
-  /// batch — a bulk convenience on top of publishProgram(), not a way to
-  /// publish a single row.
+  /// Publishes everything currently **pending** (status != 'Published'),
+  /// across every program, in one batch — a bulk convenience on top of
+  /// publishProgram(), not a way to publish a single row. Already-
+  /// published groups are untouched by this — use the per-program
+  /// "Republish" action for those.
   Future<String?> publishAll() async {
-    if (pendingResults.isEmpty) return null;
+    final toPublish = pendingResults.where((r) => r.status != 'Published').toList();
+    if (toPublish.isEmpty) return null;
     try {
       final batch = FirebaseFirestore.instance.batch();
-      for (final r in pendingResults) {
+      for (final r in toPublish) {
         batch.update(_registrationsCollection.doc(r.id), {'STATUS': 'Published'});
       }
       await batch.commit();
-      for (final r in pendingResults) {
-        r.dispose();
+      for (final r in toPublish) {
+        r.status = 'Published';
       }
-      pendingResults = [];
       notifyListeners();
       return null;
     } catch (e) {

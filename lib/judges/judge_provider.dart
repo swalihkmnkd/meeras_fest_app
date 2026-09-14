@@ -74,7 +74,7 @@ class AssignedProgram {
     for (final letter in letters) {
       if (score >= gradeStarts[letter]!) return letter;
     }
-    return letters.isEmpty ? '' : letters.last;
+    return letters.isEmpty ? '' : "No grade";
   }
 
   num gradePointFor(String grade) => gradePoints[grade] ?? 0;
@@ -588,9 +588,13 @@ class JudgeProvider extends ChangeNotifier {
   }
 
   /// Saves this student's score, computes their grade, then re-ranks
-  /// every judged student in the current program by score (standard
-  /// competition ranking — ties share a rank) and writes rank + points
-  /// back to Firestore for all of them, not just the one just entered.
+  /// every judged student in the current program by score — dense
+  /// ranking (ties share a rank, and the next distinct score always
+  /// advances the rank by exactly 1: 1,1,2,2,3 — not 1,1,3,3,5) — and
+  /// writes rank + points back to Firestore for all of them, not just
+  /// the one just entered. Matches ResultsPublishProvider.saveEdit on
+  /// the admin side, so a judge's ranking and an admin's later edit
+  /// never disagree on ranking style.
   Future<String?> saveScore(String judgeId, RegistrationScore reg) async {
     final program = selectedProgram;
     if (program == null) return 'No program selected';
@@ -632,10 +636,15 @@ class JudgeProvider extends ChangeNotifier {
 
       int currentRank = 0;
       num? previousScore;
+      // ⬅️ CHANGED — dense ranking: the next distinct score always
+      // advances the rank by exactly 1 (1,1,2,2,3), instead of skipping
+      // ahead by the size of the previous tie group (1,1,3,3,5). Only
+      // whether the score differs from the previous one matters here;
+      // the increment no longer depends on row index `i`.
       for (var i = 0; i < forRanking.length; i++) {
         final r = forRanking[i];
         if (previousScore == null || r.score != previousScore) {
-          currentRank = i + 1;
+          currentRank = previousScore == null ? 1 : currentRank + 1;
         }
         previousScore = r.score;
 

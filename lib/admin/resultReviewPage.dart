@@ -9,74 +9,120 @@ class ResultsReviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ResultsPublishProvider()..fetchPending(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
-        appBar: AppBar(
-          title: const Text('Publish Results'),
-          backgroundColor: const Color(0xFF6366F1),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          actions: [
-            Consumer<ResultsPublishProvider>(
-              builder: (context, provider, _) => TextButton(
-                onPressed: provider.pendingResults.isEmpty
-                    ? null
-                    : () async {
-                  final error = await provider.publishAll();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(error ?? 'All results published')),
-                    );
-                  }
-                },
-                child: const Text('Publish All', style: TextStyle(color: Colors.white)),
-              ),
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF3F4F6),
+          appBar: AppBar(
+            title: const Text('Publish Results'),
+            backgroundColor: const Color(0xFF6366F1),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            bottom: const TabBar(
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              tabs: [
+                Tab(text: 'Pending'),
+                Tab(text: 'Published'),
+              ],
             ),
-          ],
-        ),
-        body: Consumer<ResultsPublishProvider>(
-          builder: (context, provider, _) {
-            if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (provider.errorMessage != null) {
-              return Center(child: Text(provider.errorMessage!));
-            }
-            final groups = provider.pendingByProgram;
-            if (groups.isEmpty) {
-              return const Center(
-                child: Text('No results waiting to be published.',
-                    style: TextStyle(color: Colors.grey)),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: groups.length,
-              itemBuilder: (context, index) {
-                return _ProgramResultsCard(group: groups[index], provider: provider);
-              },
-            );
-          },
+            actions: [
+              Consumer<ResultsPublishProvider>(
+                builder: (context, provider, _) => TextButton(
+                  onPressed: !provider.hasPendingResults
+                      ? null
+                      : () async {
+                    final error = await provider.publishAll();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error ?? 'All results published')),
+                      );
+                    }
+                  },
+                  child: const Text('Publish All', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+          body: const TabBarView(
+            children: [
+              _ResultsList(mode: _ListMode.pending),
+              _ResultsList(mode: _ListMode.published),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+enum _ListMode { pending, published }
+
+class _ResultsList extends StatelessWidget {
+  final _ListMode mode;
+  const _ResultsList({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ResultsPublishProvider>(
+      builder: (context, provider, _) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (provider.errorMessage != null) {
+          return Center(child: Text(provider.errorMessage!));
+        }
+        final groups = mode == _ListMode.pending
+            ? provider.pendingByProgram
+            : provider.publishedByProgram;
+        if (groups.isEmpty) {
+          return Center(
+            child: Text(
+              mode == _ListMode.pending
+                  ? 'No results waiting to be published.'
+                  : 'Nothing published yet.',
+              style: const TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: provider.fetchPending,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: groups.length,
+            itemBuilder: (context, index) {
+              return _ProgramResultsCard(
+                group: groups[index],
+                provider: provider,
+                isPublished: mode == _ListMode.published,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// One program's card: name once at top, every judged student listed below
-/// with an inline score editor, and a single "Publish Program" button that
-/// publishes all of them together — never just one row.
+/// with an inline score editor, and a single Publish/Republish button that
+/// acts on all of them together — never just one row.
 class _ProgramResultsCard extends StatelessWidget {
   final ProgramResultsGroup group;
   final ResultsPublishProvider provider;
-  const _ProgramResultsCard({required this.group, required this.provider});
+  final bool isPublished;
+  const _ProgramResultsCard({
+    required this.group,
+    required this.provider,
+    required this.isPublished,
+  });
 
   @override
   Widget build(BuildContext context) {
     final publishing = provider.isPublishingProgram(group.programId);
-    // ⬅️ CHANGED: one card per team for General programs, so editing a
-    // team's shared score doesn't show (or require touching) a separate
-    // row per teammate.
+    // One card per team for General programs, so editing a team's shared
+    // score doesn't show (or require touching) a separate row per teammate.
     final visibleResults = group.displayedResults;
 
     return Container(
@@ -98,21 +144,32 @@ class _ProgramResultsCard extends StatelessWidget {
                 child: Text(group.programName,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
+              if (isPublished)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('Published',
+                      style: TextStyle(
+                          fontSize: 11, color: Color(0xFF166534), fontWeight: FontWeight.w600)),
+                ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                // ⬅️ CHANGED: reflects what's actually listed below (one
-                // chip per team for General), not the raw registration count.
+                // Reflects what's actually listed below (one chip per
+                // team for General), not the raw registration count.
                 child: Text(group.results[0].isGeneral?'${visibleResults.length} teams':'${visibleResults.length} students',
                     style: const TextStyle(fontSize: 11, color: Color(0xff6B7280))),
               ),
             ],
           ),
           const Divider(height: 20),
-          // ⬅️ CHANGED: iterate visibleResults instead of group.results.
           ...visibleResults.map((result) => _StudentResultRow(result: result, provider: provider)),
           const SizedBox(height: 10),
           SizedBox(
@@ -123,13 +180,15 @@ class _ProgramResultsCard extends StatelessWidget {
                   : () async {
                 final error = await provider.publishProgram(group.programId);
                 if (context.mounted) {
+                  final verb = isPublished ? 'republished' : 'published';
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(error ?? '${group.programName} results published')),
+                    SnackBar(content: Text(error ?? '${group.programName} results $verb')),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor:
+                isPublished ? const Color(0xFF6366F1) : const Color(0xFF10B981),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -138,9 +197,10 @@ class _ProgramResultsCard extends StatelessWidget {
                   height: 18,
                   width: 18,
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              // ⬅️ Unchanged: still shows the true registration count
-              // being published, even though fewer cards are shown above.
-                  : Text('Publish ${group.programName} (${visibleResults.length})',
+              // Still shows the true registration count being
+              // published/republished, even though fewer cards are shown above.
+                  : Text(
+                  '${isPublished ? 'Republish' : 'Publish'} ${group.programName} (${visibleResults.length})',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ),
@@ -158,8 +218,8 @@ class _StudentResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final saving = provider.isSavingEdit(result.id);
-    // ⬅️ NEW: General programs are team results — show the team name,
-    // never the representative student's name.
+    // General programs are team results — show the team name, never the
+    // representative student's name.
     final title = result.isGeneral ? result.teamName : result.studentName;
 
     return Padding(
@@ -192,8 +252,8 @@ class _StudentResultRow extends StatelessWidget {
                       ),
                   ],
                 ),
-                // ⬅️ CHANGED: Reg # is per-student and not meaningful for
-                // a team-level General row — shown only for non-general.
+                // Reg # is per-student and not meaningful for a
+                // team-level General row — shown only for non-general.
                 if (!result.isGeneral)
                   Text('Reg #${result.registerNumber}',
                       style: const TextStyle(fontSize: 11, color: Colors.grey)),

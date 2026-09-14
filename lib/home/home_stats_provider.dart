@@ -11,7 +11,7 @@ class WinnerEntry {
   final String teamName;
   final DateTime? judgedAt;
   final String photoUrl;
-  final bool isGeneral; // ⬅️ NEW — General programs are team results, not one student's
+  final bool isGeneral; // ⬅️ General programs are team results, not one student's
 
   WinnerEntry({
     required this.programName,
@@ -46,6 +46,7 @@ class TeamStanding {
     return match.color;
   }
 }
+
 /// A program that currently has registrations marked STATUS == 'Assigned',
 /// i.e. it's on stage / being judged right now.
 class LiveProgramInfo {
@@ -214,11 +215,11 @@ class HomeStatsProvider extends ChangeNotifier {
       };
 
       // ---- Latest 10 rank-1 winners, most recently judged first ----
-      // ⬅️ CHANGED: for General programs, several students from the same
-      // team can all be registered (and RANK==1'd) under the same
-      // PROGRAM_ID — that's one team result, not several winners, so
-      // only the first registration per (teamId, programId) contributes
-      // a WinnerEntry. Non-general RANK==1 registrations are unaffected.
+      // For General programs, several students from the same team can
+      // all be registered (and RANK==1'd) under the same PROGRAM_ID —
+      // that's one team result, not several winners, so only the first
+      // registration per (teamId, programId) contributes a WinnerEntry.
+      // Non-general RANK==1 registrations are unaffected.
       final winners = <WinnerEntry>[];
       final generalWinnerCounted = <String>{};
       for (final doc in _publishedDocs) {
@@ -281,34 +282,67 @@ class HomeStatsProvider extends ChangeNotifier {
         ..sort((a, b) => a.programName.compareTo(b.programName));
 
       // ---- Add published points on top of the zero-seeded totals ----
-      // For IS_GENERAL registrations, multiple students from the same team
-      // can be registered under the same PROGRAM_ID (e.g. group items under
-      // a "General" program category). In that case the team should only be
-      // credited once for that team+program combination, not once per
-      // student — so we track which (teamId, programId) general pairs have
-      // already contributed points and skip the rest.
-      final generalCounted = <String>{};
+      //
+      // For IS_GENERAL registrations, multiple students from the same
+      // team can be registered under the same PROGRAM_ID (e.g. group
+      // items under a "General" program category). The team should only
+      // be credited once for that team+program combination — and it must
+      // be the BEST (highest) point value among that team's
+      // registrations for the program, not whichever registration
+      // happens to be encountered first. Firestore snapshot order is not
+      // guaranteed, so "first" could easily be a lower-scoring or
+      // zero-point entry, silently dropping real points and undercounting
+      // the team's total.
+      //
+      // Pass 1: for every (teamId, programId) GENERAL pair, find the
+      // single best point value across all of that team's registrations.
+      final generalBestPoints = <String, num>{}; // 'teamId|programId' -> best point
+      final generalCategoryOf = <String, String>{}; // 'teamId|programId' -> category
+
       for (final doc in _publishedDocs) {
         final data = doc.data();
+        if (data['IS_GENERAL'] != true) continue;
+
         final teamId = (data['TEAM_ID'] ?? '').toString();
         if (teamId.isEmpty) continue;
         final category = teamCategoryOf[teamId];
         if (category == null) continue; // registration references an unknown team
+
         final point = (data['POINT'] ?? 0) as num;
         final programId = (data['PROGRAM_ID'] ?? '').toString();
-        final isGeneral = data['IS_GENERAL'] == true;
+        final key = '$teamId|$programId';
 
-        if (isGeneral) {
-          final key = '$teamId|$programId';
-          if (generalCounted.contains(key)) {
-            continue; // already added this team's points for this general program
-          }
-          generalCounted.add(key);
+        final existing = generalBestPoints[key];
+        if (existing == null || point > existing) {
+          generalBestPoints[key] = point;
+          generalCategoryOf[key] = category;
         }
+      }
 
+      // Pass 2: non-general registrations each add their own points
+      // directly — one registration, one contribution.
+      for (final doc in _publishedDocs) {
+        final data = doc.data();
+        if (data['IS_GENERAL'] == true) continue; // handled in pass 1/3
+
+        final teamId = (data['TEAM_ID'] ?? '').toString();
+        if (teamId.isEmpty) continue;
+        final category = teamCategoryOf[teamId];
+        if (category == null) continue;
+
+        final point = (data['POINT'] ?? 0) as num;
         pointsByCategory[category]![teamId] =
             (pointsByCategory[category]![teamId] ?? 0) + point;
       }
+
+      // Pass 3: fold in each team's single best score per general
+      // program, exactly once.
+      generalBestPoints.forEach((key, point) {
+        final teamId = key.split('|').first;
+        final category = generalCategoryOf[key]!;
+        pointsByCategory[category]![teamId] =
+            (pointsByCategory[category]![teamId] ?? 0) + point;
+      });
 
       final grouped = <String, List<TeamStanding>>{};
       pointsByCategory.forEach((category, teamPoints) {
