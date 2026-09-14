@@ -15,7 +15,7 @@ class RegistrationModel {
   final String registrationId;
   final String registrationNumber;
 
-  // ⬅️ NEW: the code letter assigned by the Stage Manager for this
+  // ⬅️ The code letter assigned by the Stage Manager for this
   // program (e.g. "A"). Empty string means "not assigned yet".
   final String codeLetter;
 
@@ -51,7 +51,7 @@ class RegistrationModel {
     'createdAt': createdAt ?? FieldValue.serverTimestamp(),
     'REGISTRATION_ID': registrationId,
     'REGISTER_NUMBER': registrationNumber,
-    'CODE_LETTER': codeLetter, // ⬅️ NEW
+    'CODE_LETTER': codeLetter,
   };
 
   factory RegistrationModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -75,7 +75,7 @@ class RegistrationModel {
       // back as false, which is a safe default.
       isGeneral: data['IS_GENERAL'] ?? false,
       createdAt: data['createdAt'],
-      codeLetter: (data['CODE_LETTER'] ?? '').toString(), // ⬅️ NEW
+      codeLetter: (data['CODE_LETTER'] ?? '').toString(),
     );
   }
 

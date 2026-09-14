@@ -365,6 +365,8 @@ class _ScoringView extends StatelessWidget {
 
 /// Splits registrations into "To Score" and "Scored" sections so scored
 /// students are visually separated instead of mixed into one long list.
+/// Ordering within each section (by CODE_LETTER: A, B, ... Z, AA, AB, ...)
+/// comes from JudgeProvider.openProgram, so no extra sort is needed here.
 class _RegistrationSections extends StatelessWidget {
   final List<RegistrationScore> registrations;
   final JudgeProvider provider;
@@ -497,7 +499,7 @@ class _StudentScoreCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Align(
-                      child: Text(reg.codeLetter ?? reg.studentName,
+                      child: Text(reg.codeLetter.isNotEmpty ? reg.codeLetter : reg.studentName,
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 2),
@@ -553,9 +555,9 @@ class _StudentScoreCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // ---- Scored state shows a green pill with a check icon and
-              // disables the field above. Unscored state keeps the original
-              // Save button (same onSubmit -> saveScore() path). ----
+              // Scored state shows a green pill with a check icon and
+              // disables the field above. Unscored state keeps the
+              // original Save button (same onSubmit -> saveScore() path).
               SizedBox(
                 height: 44,
                 child: isScored

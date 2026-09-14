@@ -337,9 +337,9 @@ class JudgeProvider extends ChangeNotifier {
   /// program and adds the id to the judge's ASSIGNED_PROGRAM_IDS array,
   /// both in a single batch so they can't drift out of sync.
   ///
-  /// ⬅️ NEW: also sets STATUS = 'Assigned' on every REGISTRATIONS doc
-  /// matching this PROGRAM_ID, so it's visible that those students are now
-  /// up for judging. Registrations already 'Resulted' or 'Published' (i.e.
+  /// Also sets STATUS = 'Assigned' on every REGISTRATIONS doc matching
+  /// this PROGRAM_ID, so it's visible that those students are now up for
+  /// judging. Registrations already 'Resulted' or 'Published' (i.e.
   /// already judged) are left untouched — assigning a program shouldn't
   /// erase existing results.
   Future<String?> assignProgram(String judgeId, String programId) async {
@@ -373,9 +373,9 @@ class JudgeProvider extends ChangeNotifier {
   /// Reverses assignProgram: clears STATUS/ASSIGNED_TO on the program and
   /// removes the id from the judge's ASSIGNED_PROGRAM_IDS array.
   ///
-  /// ⬅️ NEW: also reverts STATUS back to '' on this program's registrations
-  /// — but only the ones still sitting at 'Assigned'. Registrations that
-  /// already moved on to 'Resulted' or 'Published' are left as-is, since
+  /// Also reverts STATUS back to '' on this program's registrations — but
+  /// only the ones still sitting at 'Assigned'. Registrations that already
+  /// moved on to 'Resulted' or 'Published' are left as-is, since
   /// unassigning shouldn't undo work a judge already did.
   Future<String?> unassignProgram(String judgeId, String programId) async {
     try {
@@ -413,11 +413,11 @@ class JudgeProvider extends ChangeNotifier {
   bool isLoadingPrograms = false;
   String? programsError;
 
-  // ⬅️ NEW: per-program scoring-completion summary, keyed by program id.
-  // Loaded right after assignedPrograms so the Step-1 list can be split
-  // into "Pending" vs "Fully Scored" sections. Loaded in the background
-  // (not awaited by fetchAssignedPrograms) so the program list itself
-  // isn't held up waiting on N registration-count queries.
+  // Per-program scoring-completion summary, keyed by program id. Loaded
+  // right after assignedPrograms so the Step-1 list can be split into
+  // "Pending" vs "Fully Scored" sections. Loaded in the background (not
+  // awaited by fetchAssignedPrograms) so the program list itself isn't
+  // held up waiting on N registration-count queries.
   Map<String, ProgramProgress> programProgress = {};
   bool isLoadingProgramProgress = false;
 
@@ -550,19 +550,34 @@ class JudgeProvider extends ChangeNotifier {
       final snap = await _registrationsCollection
           .where('PROGRAM_ID', isEqualTo: program.id)
           .get();
-      // ⬅️ NEW: once the admin has published a result, it's final — it
-      // no longer shows (or can be re-scored) in the judge panel.
+      // Once the admin has published a result, it's final — it no longer
+      // shows (or can be re-scored) in the judge panel.
       registrations = snap.docs
           .map(RegistrationScore.fromDoc)
       // .where((r) => r.status != 'Published')
           .toList()
-        ..sort((a, b) => a.registerNumber.compareTo(b.registerNumber));
+        ..sort(_byCodeLetter);
     } catch (e) {
       registrationsError = 'Failed to load registrations: $e';
     } finally {
       isLoadingRegistrations = false;
       notifyListeners();
     }
+  }
+
+  /// Orders registrations by their assigned CODE_LETTER: A, B, ... Z, AA,
+  /// AB, ... Sorting by length first then alphabetically keeps that
+  /// sequence correct (a plain string compare would put "AA" before "B").
+  /// Registrations without a code letter yet (empty string) sort last,
+  /// falling back to register number so their relative order stays stable.
+  int _byCodeLetter(RegistrationScore a, RegistrationScore b) {
+    final la = a.codeLetter;
+    final lb = b.codeLetter;
+    if (la.isEmpty && lb.isEmpty) return a.registerNumber.compareTo(b.registerNumber);
+    if (la.isEmpty) return 1;
+    if (lb.isEmpty) return -1;
+    if (la.length != lb.length) return la.length.compareTo(lb.length);
+    return la.compareTo(lb);
   }
 
   void closeProgram() {
@@ -636,11 +651,11 @@ class JudgeProvider extends ChangeNotifier {
 
       int currentRank = 0;
       num? previousScore;
-      // ⬅️ CHANGED — dense ranking: the next distinct score always
-      // advances the rank by exactly 1 (1,1,2,2,3), instead of skipping
-      // ahead by the size of the previous tie group (1,1,3,3,5). Only
-      // whether the score differs from the previous one matters here;
-      // the increment no longer depends on row index `i`.
+      // Dense ranking: the next distinct score always advances the rank
+      // by exactly 1 (1,1,2,2,3), instead of skipping ahead by the size
+      // of the previous tie group (1,1,3,3,5). Only whether the score
+      // differs from the previous one matters here; the increment no
+      // longer depends on row index `i`.
       for (var i = 0; i < forRanking.length; i++) {
         final r = forRanking[i];
         if (previousScore == null || r.score != previousScore) {

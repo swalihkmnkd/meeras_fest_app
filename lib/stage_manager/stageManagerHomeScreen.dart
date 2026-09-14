@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:meeras_fest_app/stage_manager/stageManagerProvider.dart';
-import 'package:meeras_fest_app/registration/registration_model.dart'; // ⚠️ adjust to your real path
+
+import '../registration/registration_model.dart';
 
 // ---------------------------------------------------------------------------
 // Palette — kept consistent with StageManagerAddPage
@@ -23,11 +24,14 @@ const _kAmber = Color(0xFFF59E0B);
 /// StageManagerAddPage / StageManagerAdminProvider.
 ///
 /// Two tabs:
-///  • "To Assign" — programs that still have at least one un-lettered entry.
-///  • "Assigned"  — programs where every entry already has a code letter.
+///  • "To Assign" — programs that still have at least one un-lettered entry
+///    (or, for general programs, at least one un-lettered team).
+///  • "Assigned"  — programs where everything already has a code letter.
 ///
-/// Tapping any program card opens a bottom sheet where the Stage Manager
-/// assigns / changes a letter for each team entered in that program.
+/// Tapping any program card opens a bottom sheet. For "general" programs
+/// it shows one row per team (with the team's register number) and a
+/// single letter applies to every registration that team has in the
+/// program. For non-general programs it shows one row per registration.
 class StageManagerAssignmentsPage extends StatefulWidget {
   const StageManagerAssignmentsPage({super.key});
 
@@ -334,6 +338,7 @@ class _ProgramCard extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
+                          for (final tc in program.teamCategories) _Tag(text: tc, color: _kSuccessDark),
                           _Tag(text: program.programCategory, color: _kPrimary),
                           _Tag(text: program.stageType, color: _kAmber),
                           if (program.isGeneral) const _Tag(text: 'General', color: _kMuted),
@@ -369,7 +374,11 @@ class _ProgramCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => ChangeNotifierProvider.value(
         value: prov,
-        child: _AssignSheet(programId: program.programId, programName: program.programName),
+        child: _AssignSheet(
+          programId: program.programId,
+          programName: program.programName,
+          isGeneral: program.isGeneral,
+        ),
       ),
     );
   }
@@ -395,19 +404,31 @@ class _Tag extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Assign sheet — pick / change a letter for each team in the program
+// Assign sheet — general programs show one row per team, others per entry
 // ---------------------------------------------------------------------------
 class _AssignSheet extends StatelessWidget {
   final String programId;
   final String programName;
+  final bool isGeneral;
 
-  const _AssignSheet({required this.programId, required this.programName});
+  const _AssignSheet({
+    required this.programId,
+    required this.programName,
+    required this.isGeneral,
+  });
 
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<StageManagerProvider>();
     final regs = prov.registrationsForProgram(programId);
-    final letters = StageManagerProvider.letterOptions(regs.length);
+    final teamGroups = isGeneral ? prov.teamGroupsForProgram(programId) : const <TeamAssignmentGroup>[];
+
+    final itemCount = isGeneral ? teamGroups.length : regs.length;
+    final assignedCount = isGeneral
+        ? teamGroups.where((g) => g.isAssigned).length
+        : regs.where((r) => r.isAssigned).length;
+
+    final letters = StageManagerProvider.letterOptions(itemCount);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -438,14 +459,32 @@ class _AssignSheet extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: _kInk),
                       ),
                     ),
-                    Text('${regs.where((r) => r.isAssigned).length}/${regs.length} assigned',
+                    Text('$assignedCount/$itemCount assigned',
                         style: const TextStyle(color: _kMuted, fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
               const Divider(height: 1),
               Expanded(
-                child: ListView.separated(
+                child: isGeneral
+                    ? ListView.separated(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  itemCount: teamGroups.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    final group = teamGroups[i];
+                    final taken = prov.takenLettersForTeams(programId, exceptTeamId: group.teamId);
+                    return _TeamAssignRow(
+                      group: group,
+                      letters: letters,
+                      takenLetters: taken,
+                      onChanged: (letter) =>
+                          prov.assignCodeLetterForTeam(programId, group.teamId, letter),
+                    );
+                  },
+                )
+                    : ListView.separated(
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   itemCount: regs.length,
@@ -534,6 +573,94 @@ class _AssignRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 items: letters.map((l) {
                   final disabled = takenLetters.contains(l) && l != reg.codeLetter;
+                  return DropdownMenuItem(
+                    value: l,
+                    enabled: !disabled,
+                    child: Text(l, style: TextStyle(color: disabled ? _kBorder : _kInk)),
+                  );
+                }).toList(),
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Team row for "general" programs — shows the team's register number and
+/// name, and one dropdown that assigns the same letter to every
+/// registration that team has in this program (one Firestore batch write).
+class _TeamAssignRow extends StatelessWidget {
+  final TeamAssignmentGroup group;
+  final List<String> letters;
+  final Set<String> takenLetters;
+  final ValueChanged<String?> onChanged;
+
+  const _TeamAssignRow({
+    required this.group,
+    required this.letters,
+    required this.takenLetters,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final assigned = group.isAssigned;
+    final currentLetter = group.codeLetter;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: assigned ? _kSuccess.withOpacity(0.06) : _kBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: assigned ? _kSuccess.withOpacity(0.35) : _kBorder),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: assigned ? _kSuccess : Colors.white,
+            child: Text(
+              assigned && currentLetter.isNotEmpty ? currentLetter : '—',
+              style: TextStyle(
+                color: assigned ? Colors.white : _kMuted,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(group.teamName, style: const TextStyle(fontWeight: FontWeight.w600, color: _kInk)),
+                Text(
+                  group.registerNumber.isNotEmpty
+                      ? 'Reg #${group.registerNumber} · ${group.regs.length} entr${group.regs.length == 1 ? 'y' : 'ies'}'
+                      : '${group.regs.length} entr${group.regs.length == 1 ? 'y' : 'ies'}',
+                  style: const TextStyle(fontSize: 12, color: _kMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _kBorder),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: assigned && currentLetter.isNotEmpty ? currentLetter : null,
+                hint: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('Set', style: TextStyle(color: _kMuted, fontSize: 13)),
+                ),
+                borderRadius: BorderRadius.circular(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                items: letters.map((l) {
+                  final disabled = takenLetters.contains(l) && l != currentLetter;
                   return DropdownMenuItem(
                     value: l,
                     enabled: !disabled,

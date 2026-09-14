@@ -7,6 +7,12 @@ import 'package:meeras_fest_app/registration/registration_model.dart'; // ⚠️
 /// program category, student category and stage type, groups the
 /// (filtered) registrations by program for browsing, and lets them
 /// assign a code letter to each registration within a chosen program.
+///
+/// For "general" programs, an entire team shares one code letter across
+/// all of its registrations in that program — see [teamGroupsForProgram]
+/// and [assignCodeLetterForTeam]. For non-general programs, each
+/// registration gets its own letter — see [registrationsForProgram] and
+/// [assignCodeLetter].
 class StageManagerProvider extends ChangeNotifier {
   // ⚠️ Adjust this if your registrations live under a different
   // Firestore collection name.
@@ -42,7 +48,7 @@ class StageManagerProvider extends ChangeNotifier {
           ),
       };
 
-      final regsSnap = await _registrationsCollection.get();
+      final regsSnap = await _registrationsCollection.where("STATUS",isEqualTo: "Assigned").get();
       _all = regsSnap.docs.map(RegistrationModel.fromDoc).toList();
     } catch (e) {
       loadError = 'Failed to load registrations: $e';
@@ -121,6 +127,15 @@ class StageManagerProvider extends ChangeNotifier {
 
   /// Programs that match the current filters, one entry per program,
   /// with an assigned/total count — this powers the home list.
+  ///
+  /// For "general" programs, `total`/`assigned` count TEAMS (one letter
+  /// per team), not individual registrations, since the Stage Manager
+  /// assigns one letter per team in that case.
+  ///
+  /// Also carries the distinct set of team categories represented among
+  /// that program's registrations (e.g. a program entered by both
+  /// "Senior" and "Junior" teams shows both), so the list screen can
+  /// display them as chips on the program card.
   List<ProgramSummary> get programSummaries {
     final byProgram = <String, List<RegistrationModel>>{};
     for (final r in _filtered) {
@@ -128,14 +143,30 @@ class StageManagerProvider extends ChangeNotifier {
     }
     final list = byProgram.entries.map((e) {
       final regs = e.value;
+      final isGeneral = regs.first.isGeneral;
+
+      int total;
+      int assigned;
+      if (isGeneral) {
+        final groups = _groupIntoTeams(regs);
+        total = groups.length;
+        assigned = groups.where((g) => g.isAssigned).length;
+      } else {
+        total = regs.length;
+        assigned = regs.where((r) => r.isAssigned).length;
+      }
+
+      final teamCats = _distinct(regs.map((r) => teamCategory(r.teamId)));
+
       return ProgramSummary(
         programId: e.key,
         programName: regs.first.programName,
         programCategory: regs.first.programCategory,
         stageType: regs.first.stageType,
-        isGeneral: regs.first.isGeneral,
-        total: regs.length,
-        assigned: regs.where((r) => r.isAssigned).length,
+        isGeneral: isGeneral,
+        total: total,
+        assigned: assigned,
+        teamCategories: teamCats,
       );
     }).toList();
     list.sort((a, b) => a.programName.compareTo(b.programName));
@@ -152,8 +183,40 @@ class StageManagerProvider extends ChangeNotifier {
     return regs;
   }
 
+  /// For "general" programs: one group per team entered in [programId],
+  /// carrying every registration that belongs to that team in that
+  /// program, so a single letter can be applied to all of them at once.
+  List<TeamAssignmentGroup> teamGroupsForProgram(String programId) {
+    return _groupIntoTeams(registrationsForProgram(programId));
+  }
+
+  List<TeamAssignmentGroup> _groupIntoTeams(List<RegistrationModel> regs) {
+    final byTeam = <String, List<RegistrationModel>>{};
+    for (final r in regs) {
+      byTeam.putIfAbsent(r.teamId, () => []).add(r);
+    }
+    final groups = byTeam.entries.map((e) {
+      final teamRegs = e.value;
+      // A team's registrations for a program are expected to share one
+      // registration number (they were registered together); fall back
+      // to the first non-empty one in case any entry is missing it.
+      final regNumber = teamRegs
+          .map((r) => r.registrationNumber)
+          .firstWhere((n) => n.isNotEmpty, orElse: () => '');
+      return TeamAssignmentGroup(
+        teamId: e.key,
+        teamName: teamName(e.key),
+        registerNumber: regNumber,
+        regs: teamRegs,
+      );
+    }).toList();
+    groups.sort((a, b) => a.teamName.compareTo(b.teamName));
+    return groups;
+  }
+
   /// Letters already taken by OTHER registrations in this program, so
   /// the dropdown can disable them (no two entries share a letter).
+  /// Use this for non-general programs (per-entry assignment).
   Set<String> takenLetters(String programId, {String? exceptRegistrationId}) {
     return _all
         .where((r) =>
@@ -161,6 +224,16 @@ class StageManagerProvider extends ChangeNotifier {
         r.id != exceptRegistrationId &&
         r.isAssigned)
         .map((r) => r.codeLetter)
+        .toSet();
+  }
+
+  /// Letters already taken by OTHER teams in this program. Use this for
+  /// general programs (per-team assignment).
+  Set<String> takenLettersForTeams(String programId, {String? exceptTeamId}) {
+    return teamGroupsForProgram(programId)
+        .where((g) => g.teamId != exceptTeamId)
+        .map((g) => g.codeLetter)
+        .where((l) => l.isNotEmpty)
         .toSet();
   }
 
@@ -173,8 +246,32 @@ class StageManagerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies the same [letter] to every registration belonging to
+  /// [teamId] within [programId] — used for "general" programs, where
+  /// the whole team shares one code letter. Writes in a single batch.
+  Future<void> assignCodeLetterForTeam(
+      String programId, String teamId, String? letter) async {
+    final regs = _all
+        .where((r) => r.programId == programId && r.teamId == teamId)
+        .toList();
+    if (regs.isEmpty) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+    for (final r in regs) {
+      batch.update(_registrationsCollection.doc(r.id), {'CODE_LETTER': letter ?? ''});
+    }
+    await batch.commit();
+
+    for (final r in regs) {
+      final idx = _all.indexWhere((x) => x.id == r.id);
+      if (idx != -1) _all[idx] = _all[idx].copyWith(codeLetter: letter ?? '');
+    }
+    notifyListeners();
+  }
+
   /// A, B, C, ... Z, AA, AB, ... — sized to [count] entries. Used to
-  /// build the dropdown options for a program with [count] registrations.
+  /// build the dropdown options for a program with [count] registrations
+  /// (or, for general programs, [count] teams).
   static List<String> letterOptions(int count) {
     return List.generate(count, (i) => _letterAt(i));
   }
@@ -204,6 +301,7 @@ class ProgramSummary {
   final bool isGeneral;
   final int total;
   final int assigned;
+  final List<String> teamCategories;
 
   ProgramSummary({
     required this.programId,
@@ -213,5 +311,35 @@ class ProgramSummary {
     required this.isGeneral,
     required this.total,
     required this.assigned,
+    this.teamCategories = const [],
   });
+}
+
+/// One team's worth of registrations within a single "general" program —
+/// all of them get assigned the same code letter together.
+class TeamAssignmentGroup {
+  final String teamId;
+  final String teamName;
+  final String registerNumber;
+  final List<RegistrationModel> regs;
+
+  TeamAssignmentGroup({
+    required this.teamId,
+    required this.teamName,
+    required this.registerNumber,
+    required this.regs,
+  });
+
+  bool get isAssigned =>
+      regs.isNotEmpty && regs.every((r) => r.isAssigned && r.codeLetter.isNotEmpty);
+
+  /// The team's shared code letter, if every registration in the group
+  /// actually carries the same one (it always should, since they're only
+  /// ever written together via [assignCodeLetterForTeam]).
+  String get codeLetter {
+    if (regs.isEmpty) return '';
+    final first = regs.first.codeLetter;
+    final allSame = regs.every((r) => r.codeLetter == first);
+    return allSame ? first : '';
+  }
 }
