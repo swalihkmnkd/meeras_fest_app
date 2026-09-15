@@ -550,9 +550,9 @@ class _AssignRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(reg.programName, style: const TextStyle(fontWeight: FontWeight.w600, color: _kInk)),
-                if (reg.studentCategory.isNotEmpty)
-                  Text(reg.studentCategory, style: const TextStyle(fontSize: 12, color: _kMuted)),
+                Text(reg.studentName, style: const TextStyle(fontWeight: FontWeight.w600, color: _kInk)),
+                if (reg.registrationNumber.isNotEmpty)
+                  Text(reg.registrationNumber, style: const TextStyle(fontSize: 18, color: _kMuted)),
               ],
             ),
           ),
